@@ -1,3 +1,30 @@
+#!/bin/sh
+
+if [ -z "$YDB_GRPC_ENABLE_TLS" ]; then
+  YDB_GRPC_ENABLE_TLS="true"
+fi
+
+if [ -z "$GRPC_TLS_PORT" ]; then
+  GRPC_TLS_PORT=${GRPC_TLS_PORT:-2135}
+fi
+
+if [ -z "$GRPC_PORT" ]; then
+  GRPC_PORT=${GRPC_PORT:-2136}
+fi
+
+if [ -z "$YDB_GRPC_TLS_DATA_PATH" ]; then
+  YDB_GRPC_TLS_DATA_PATH="/ydb_certs"
+fi
+
+if [ -z "$YDB_USE_IN_MEMORY_PDISKS" ]; then
+  YDB_PDISK_PATH="/ydb_data/pdisk1.data"
+else
+  YDB_PDISK_PATH="SectorMap:1:64"
+fi
+
+mkdir -p /ydb_data
+
+cat << EOF > /ydb_data/config.yaml
 actor_system_config:
   batch_executor: 2
   executor:
@@ -48,7 +75,7 @@ blob_storage_config:
             vdisk_slot_id: 0
     pdisks:
     - node_id: 1
-      path: /ydb_data/pdisk1_j66tkqj.data
+      path: ${YDB_PDISK_PATH}
       pdisk_category: 0
       pdisk_guid: 1
       pdisk_id: 1
@@ -155,10 +182,10 @@ feature_flags:
   enable_public_api_external_blobs: false
   enable_scheme_transactions_at_scheme_shard: true
 grpc_config:
-  ca: /ydb_certs/ca.pem
-  cert: /ydb_certs/cert.pem
+  ca: ${YDB_GRPC_TLS_DATA_PATH}/ca.pem
+  cert: ${YDB_GRPC_TLS_DATA_PATH}/cert.pem
   host: '[::]'
-  key: /ydb_certs/key.pem
+  key: ${YDB_GRPC_TLS_DATA_PATH}/key.pem
   services:
   - experimental
   - legacy
@@ -306,3 +333,6 @@ yandex_query_config:
     enabled: true
   token_accessor:
     enabled: true
+EOF
+
+/bin/ydbd server --node=1 --ca=${YDB_GRPC_TLS_DATA_PATH}/ca.pem --grpc-port=${GRPC_PORT} --grpcs-port=${GRPC_TLS_PORT} --yaml-config=/ydb_data/config.yaml --mon-port=8765 --ic-port=19001
