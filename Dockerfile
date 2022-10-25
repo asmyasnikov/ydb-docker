@@ -12,7 +12,7 @@ RUN apt update && apt install -y ca-certificates wget
 
 ARG VERSION=22.4.31
 
-RUN wget https://binaries.ydb.tech/release/22.4.31/ydbd-${VERSION}-linux-amd64.tar.gz && tar --strip-components=1 -xvzf ydbd-${VERSION}-linux-amd64.tar.gz && rm -f ydbd-${VERSION}-linux-amd64.tar.gz
+RUN wget https://binaries.ydb.tech/release/${VERSION}/ydbd-${VERSION}-linux-amd64.tar.gz && tar --strip-components=1 -xvzf ydbd-${VERSION}-linux-amd64.tar.gz && rm -f ydbd-${VERSION}-linux-amd64.tar.gz
 
 RUN chmod +x ./entrypoint.sh
 
