@@ -16,14 +16,9 @@ RUN wget https://binaries.ydb.tech/release/${VERSION}/ydbd-${VERSION}-linux-amd6
 
 RUN chmod +x ./entrypoint.sh
 
-# RUN cp /lib/x86_64-linux-gnu/libdl.so.2 ./lib/
-# RUN cp /lib/x86_64-linux-gnu/librt.so.2 ./lib/
-
-FROM ${ARCH}/debian:stable-slim
-# FROM ${ARCH}/busybox:glibc
+FROM ${ARCH}/busybox:glibc
 
 COPY --from=builder /build/ /
+COPY --from=builder /lib/x86_64-linux-gnu/ /lib/x86_64-linux-gnu/
 
 ENTRYPOINT [ "/entrypoint.sh" ]
-
-CMD sh -c "/bin/ydbd server --node=1 --ca=/ydb_certs/ca.pem --grpcs-port=2135 --yaml-config=/ydb_data/kikimr_configs/config.yaml --grpc-port=2136 --mon-port=8765 --ic-port=19001"
