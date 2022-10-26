@@ -8,11 +8,13 @@ WORKDIR /build
 COPY ./ydb_certs/ ./ydb_certs
 COPY ./entrypoint.sh ./entrypoint.sh
 
-RUN apt update && apt install -y ca-certificates wget
+RUN apt update && apt install -y ca-certificates wget upx
 
 ARG VERSION=22.4.31
 
 RUN wget https://binaries.ydb.tech/release/${VERSION}/ydbd-${VERSION}-linux-amd64.tar.gz && tar --strip-components=1 -xvzf ydbd-${VERSION}-linux-amd64.tar.gz && rm -f ydbd-${VERSION}-linux-amd64.tar.gz
+
+RUN upx ./bin/ydbd
 
 RUN chmod +x ./entrypoint.sh
 
