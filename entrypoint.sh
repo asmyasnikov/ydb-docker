@@ -1,5 +1,7 @@
 #!/bin/sh
 
+mkdir -p /ydb_data
+
 if [ -z "$YDB_GRPC_ENABLE_TLS" ]; then
   YDB_GRPC_ENABLE_TLS="true"
 fi
@@ -16,13 +18,25 @@ if [ -z "$YDB_GRPC_TLS_DATA_PATH" ]; then
   YDB_GRPC_TLS_DATA_PATH="/ydb_certs"
 fi
 
-if [ -z "$YDB_USE_IN_MEMORY_PDISKS" ]; then
-  YDB_PDISK_PATH="/ydb_data/pdisk1.data"
-else
-  YDB_PDISK_PATH="SectorMap:1:64"
+if [ -z "$YDB_PDISK_CATEGORY" ]; then
+  YDB_PDISK_CATEGORY_KIND="SSD"
 fi
 
-mkdir -p /ydb_data
+if [ -z "$YDB_USE_IN_MEMORY_PDISKS" ]; then
+  YDB_PDISK_PATH="/ydb_data/ydb.data"
+  if [ -z "$YDB_PDISK_SIZE" ]; then
+    YDB_PDISK_SIZE="80G"
+  fi
+  fallocate -l ${YDB_PDISK_SIZE} ${YDB_PDISK_PATH}
+  YDB_PDISK_CATEGORY_KIND=0
+else
+  YDB_PDISK_PATH="SectorMap:1:64"
+  YDB_PDISK_CATEGORY_KIND=1
+fi
+
+if [ -z "$YDB_INTERCONNECT_PORT" ]; then
+  YDB_INTERCONNECT_PORT="19001"
+fi
 
 cat << EOF > /ydb_data/config.yaml
 actor_system_config:
@@ -95,37 +109,37 @@ channel_profile_config:
   profile:
   - channel:
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     profile_id: 0
   - channel:
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     - erasure_species: none
-      pdisk_category: 0
-      storage_pool_kind: hdd
+      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY}
     profile_id: 1
 domains_config:
   domain:
@@ -133,39 +147,39 @@ domains_config:
     name: local
     scheme_root: 72075186232723360
     storage_pool_types:
-    - kind: hdd
+    - kind: ${YDB_PDISK_CATEGORY}
       pool_config:
         box_id: 1
         erasure_species: none
-        kind: hdd
+        kind: ${YDB_PDISK_CATEGORY}
         pdisk_filter:
         - property:
           - type: ROT
         vdisk_kind: Default
-    - kind: hdd1
+    - kind: ${YDB_PDISK_CATEGORY}1
       pool_config:
         box_id: 1
         erasure_species: none
-        kind: hdd
+        kind: ${YDB_PDISK_CATEGORY}
         pdisk_filter:
         - property:
           - type: ROT
         vdisk_kind: Default
-    - kind: hdd2
+    - kind: ${YDB_PDISK_CATEGORY}2
       pool_config:
         box_id: 1
         erasure_species: none
-        kind: hdd
+        kind: ${YDB_PDISK_CATEGORY}
         pdisk_filter:
         - property:
           - type: ROT
         vdisk_kind: Default
-    - kind: hdde
+    - kind: ${YDB_PDISK_CATEGORY}e
       pool_config:
         box_id: 1
         encryption_mode: 1
         erasure_species: none
-        kind: hdd
+        kind: ${YDB_PDISK_CATEGORY}
         pdisk_filter:
         - property:
           - type: ROT
@@ -228,7 +242,7 @@ nameservice_config:
   - address: ::1
     host: localhost
     node_id: 1
-    port: 19001
+    port: ${YDB_INTERCONNECT_PORT}
     walle_location:
       body: 1
       data_center: '1'
@@ -335,4 +349,8 @@ yandex_query_config:
     enabled: true
 EOF
 
-/bin/ydbd server --node=1 --ca=${YDB_GRPC_TLS_DATA_PATH}/ca.pem --grpc-port=${GRPC_PORT} --grpcs-port=${GRPC_TLS_PORT} --yaml-config=/ydb_data/config.yaml --mon-port=8765 --ic-port=19001
+/bin/ydbd server --node=1 --ca=${YDB_GRPC_TLS_DATA_PATH}/ca.pem --grpc-port=${GRPC_PORT} --grpcs-port=${GRPC_TLS_PORT} --yaml-config=/ydb_data/config.yaml --mon-port=8765 --ic-port=${YDB_INTERCONNECT_PORT}
+
+# /bin/ydbd -s grpc://localhost:2136 admin blobstorage config init --yaml-file /ydb_data/config.yaml
+
+# sleep 3
