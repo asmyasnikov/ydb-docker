@@ -18,8 +18,8 @@ if [ -z "$YDB_GRPC_TLS_DATA_PATH" ]; then
   YDB_GRPC_TLS_DATA_PATH="/ydb_certs"
 fi
 
-if [ -z "$YDB_PDISK_CATEGORY" ]; then
-  YDB_PDISK_CATEGORY_KIND="SSD"
+if [ -z "$YDB_PDISK_CATEGORY_TYPE" ]; then
+  YDB_PDISK_CATEGORY_TYPE="SSD"
 fi
 
 if [ -z "$YDB_USE_IN_MEMORY_PDISKS" ]; then
@@ -28,10 +28,10 @@ if [ -z "$YDB_USE_IN_MEMORY_PDISKS" ]; then
     YDB_PDISK_SIZE="80G"
   fi
   fallocate -l ${YDB_PDISK_SIZE} ${YDB_PDISK_PATH}
-  YDB_PDISK_CATEGORY_KIND=0
+  YDB_PDISK_CATEGORY=0
 else
   YDB_PDISK_PATH="SectorMap:1:64"
-  YDB_PDISK_CATEGORY_KIND=1
+  YDB_PDISK_CATEGORY=1
 fi
 
 if [ -z "$YDB_INTERCONNECT_PORT" ]; then
@@ -39,8 +39,42 @@ if [ -z "$YDB_INTERCONNECT_PORT" ]; then
 fi
 
 cat << EOF > /ydb_data/config.yaml
+static_erasure: none
+host_configs:
+- drive:
+  - path: ${YDB_PDISK_PATH}
+    type: ${YDB_PDISK_CATEGORY_TYPE}
+  host_config_id: 1
+hosts:
+- host: localhost
+  host_config_id: 1
+  port: ${YDB_INTERCONNECT_PORT}
+  walle_location:
+    body: 1
+    data_center: '1'
+    rack: '1'
+domains_config:
+  domain:
+  - name: Root
+    storage_pool_types:
+    - kind: ${YDB_PDISK_CATEGORY_TYPE}
+      pool_config:
+        box_id: 1
+        erasure_species: none
+        kind: ${YDB_PDISK_CATEGORY_TYPE}
+        pdisk_filter:
+        - property:
+          - type: ${YDB_PDISK_CATEGORY_TYPE}
+        vdisk_kind: Default
+  state_storage:
+  - ring:
+      node:
+      - 1
+      nto_select: 1
+    ssid: 1
+table_service_config:
+  sql_version: 1
 actor_system_config:
-  batch_executor: 2
   executor:
   - name: System
     spin_threshold: 0
@@ -63,294 +97,50 @@ actor_system_config:
     threads: 1
     time_per_mailbox_micro_secs: 100
     type: BASIC
-  io_executor: 3
   scheduler:
     progress_threshold: 10000
     resolution: 256
     spin_threshold: 0
-  service_executor:
-  - executor_id: 4
-    service_name: Interconnect
-  sys_executor: 0
-  user_executor: 1
 blob_storage_config:
   service_set:
-    availability_domains: 1
     groups:
-    - erasure_species: 0
-      group_generation: 0
-      group_id: 0
+    - erasure_species: none
       rings:
       - fail_domains:
         - vdisk_locations:
           - node_id: 1
-            pdisk_guid: 1
-            pdisk_id: 1
-            vdisk_slot_id: 0
-    pdisks:
-    - node_id: 1
-      path: ${YDB_PDISK_PATH}
-      pdisk_category: 0
-      pdisk_guid: 1
-      pdisk_id: 1
-    vdisks:
-    - vdisk_id:
-        domain: 0
-        group_generation: 1
-        group_id: 0
-        ring: 0
-        vdisk: 0
-      vdisk_location:
-        node_id: 1
-        pdisk_guid: 1
-        pdisk_id: 1
-        vdisk_slot_id: 0
+            path: ${YDB_PDISK_PATH}
+            pdisk_category: ${YDB_PDISK_CATEGORY_TYPE}
 channel_profile_config:
   profile:
   - channel:
     - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
+      pdisk_category: ${YDB_PDISK_CATEGORY}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE}
     - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
+      pdisk_category: ${YDB_PDISK_CATEGORY}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE}
     - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
+      pdisk_category: ${YDB_PDISK_CATEGORY}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE}
     profile_id: 0
-  - channel:
-    - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
-    - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
-    - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
-    - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
-    - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
-    - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
-    - erasure_species: none
-      pdisk_category: ${YDB_PDISK_CATEGORY_KIND}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY}
-    profile_id: 1
-domains_config:
-  domain:
-  - domain_id: 1
-    name: local
-    scheme_root: 72075186232723360
-    storage_pool_types:
-    - kind: ${YDB_PDISK_CATEGORY}
-      pool_config:
-        box_id: 1
-        erasure_species: none
-        kind: ${YDB_PDISK_CATEGORY}
-        pdisk_filter:
-        - property:
-          - type: ROT
-        vdisk_kind: Default
-    - kind: ${YDB_PDISK_CATEGORY}1
-      pool_config:
-        box_id: 1
-        erasure_species: none
-        kind: ${YDB_PDISK_CATEGORY}
-        pdisk_filter:
-        - property:
-          - type: ROT
-        vdisk_kind: Default
-    - kind: ${YDB_PDISK_CATEGORY}2
-      pool_config:
-        box_id: 1
-        erasure_species: none
-        kind: ${YDB_PDISK_CATEGORY}
-        pdisk_filter:
-        - property:
-          - type: ROT
-        vdisk_kind: Default
-    - kind: ${YDB_PDISK_CATEGORY}e
-      pool_config:
-        box_id: 1
-        encryption_mode: 1
-        erasure_species: none
-        kind: ${YDB_PDISK_CATEGORY}
-        pdisk_filter:
-        - property:
-          - type: ROT
-        vdisk_kind: Default
-  state_storage:
-  - ring:
-      node:
-      - 1
-      nto_select: 1
-    ssid: 1
-feature_flags:
-  enable_mvcc: VALUE_TRUE
-  enable_persistent_query_stats: true
-  enable_public_api_external_blobs: false
-  enable_scheme_transactions_at_scheme_shard: true
 grpc_config:
+  host: '[::]'
   ca: ${YDB_GRPC_TLS_DATA_PATH}/ca.pem
   cert: ${YDB_GRPC_TLS_DATA_PATH}/cert.pem
-  host: '[::]'
   key: ${YDB_GRPC_TLS_DATA_PATH}/key.pem
-  services:
-  - experimental
-  - legacy
-  - yql
-  - discovery
-  - cms
-  - locking
-  - kesus
-  - pq
-  - pqcd
-  - pqv1
-  - datastreams
-  - scripting
-  - s3_internal
-  - clickhouse_internal
-  - rate_limiter
-  - analytics
-  - export
-  - import
-  - yq
-  - keyvalue
-interconnect_config:
-  start_tcp: true
-kqpconfig:
-  settings:
-  - name: _ResultRowsLimit
-    value: '1000'
-  - name: _KqpYqlSyntaxVersion
-    value: '1'
-  - name: _KqpAllowNewEngine
-    value: 'true'
-  - name: _KqpForceNewEngine
-    value: 'false'
-log_config:
-  default_level: 5
-  entry: []
-  sys_log: false
-nameservice_config:
-  node:
-  - address: ::1
-    host: localhost
-    node_id: 1
-    port: ${YDB_INTERCONNECT_PORT}
-    walle_location:
-      body: 1
-      data_center: '1'
-      rack: '1'
-net_classifier_config:
-  cms_config_timeout_seconds: 30
-  net_data_file_path: /ydb_data/netData.tsv
-  updater_config:
-    net_data_update_interval_seconds: 60
-    retry_interval_seconds: 30
-pqcluster_discovery_config:
-  enabled: false
-pqconfig:
-  check_acl: false
-  cluster_table_path: ''
-  clusters_update_timeout_sec: 1
-  enabled: true
-  meta_cache_timeout_sec: 1
-  quoting_config:
-    enable_quoting: false
-  require_credentials_in_new_protocol: false
-  root: ''
-  topics_are_first_class_citizen: true
-  version_table_path: ''
-sqs_config:
-  enable_dead_letter_queues: true
-  enable_sqs: false
-  force_queue_creation_v2: true
-  force_queue_deletion_v2: true
-  scheme_cache_hard_refresh_time_seconds: 0
-  scheme_cache_soft_refresh_time_seconds: 0
-static_erasure: none
-system_tablets:
-  default_node:
-  - 1
-  flat_schemeshard:
-  - info:
-      tablet_id: 72075186232723360
-  flat_tx_coordinator:
-  - node:
-    - 1
-  tx_allocator:
-  - node:
-    - 1
-  tx_mediator:
-  - node:
-    - 1
-yandex_query_config:
-  audit:
-    enabled: false
-    uaconfig:
-      uri: ''
-  checkpoint_coordinator:
-    checkpointing_period_millis: 1000
-    enabled: true
-    max_inflight: 1
-    storage:
-      endpoint: ''
-  common:
-    ids_prefix: pt
-    use_bearer_for_ydb: true
-  control_plane_proxy:
-    enabled: true
-    request_timeout: 30s
-  control_plane_storage:
-    available_binding:
-    - DATA_STREAMS
-    - OBJECT_STORAGE
-    available_connection:
-    - YDB_DATABASE
-    - CLICKHOUSE_CLUSTER
-    - DATA_STREAMS
-    - OBJECT_STORAGE
-    - MONITORING
-    enabled: true
-    storage:
-      endpoint: ''
-  db_pool:
-    enabled: true
-    storage:
-      endpoint: ''
-  enabled: false
-  gateways:
-    dq:
-      default_settings: []
-    enabled: true
-    pq:
-      cluster_mapping: []
-    solomon:
-      cluster_mapping: []
-  nodes_manager:
-    enabled: true
-  pending_fetcher:
-    enabled: true
-  pinger:
-    ping_period: 30s
-  private_api:
-    enabled: true
-  private_proxy:
-    enabled: true
-  resource_manager:
-    enabled: true
-  token_accessor:
-    enabled: true
 EOF
 
+# start storage process
 /bin/ydbd server --node=1 --ca=${YDB_GRPC_TLS_DATA_PATH}/ca.pem --grpc-port=${GRPC_PORT} --grpcs-port=${GRPC_TLS_PORT} --yaml-config=/ydb_data/config.yaml --mon-port=8765 --ic-port=${YDB_INTERCONNECT_PORT}
 
-# /bin/ydbd -s grpc://localhost:2136 admin blobstorage config init --yaml-file /ydb_data/config.yaml
+# initialize storage
+/bin/ydbd -s grpc://localhost:2136 admin blobstorage config init --yaml-file /ydb_data/config.yaml
+
+# register database
+/bin/ydbd -s grpc://localhost:2136 admin database /Root/local create ${YDB_PDISK_CATEGORY_TYPE}:1
+
+# disable checks of updates cli
+/bin/ydb --disable-checks
 
 # sleep 3
