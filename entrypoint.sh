@@ -141,6 +141,6 @@ EOF
 /bin/ydbd -s grpc://localhost:2136 admin database /Root/local create ${YDB_PDISK_CATEGORY_TYPE}:1
 
 # disable checks of updates cli
-/bin/ydb --disable-checks
+/bin/ydb version --disable-checks
 
 # sleep 3
