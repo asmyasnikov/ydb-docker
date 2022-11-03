@@ -38,6 +38,8 @@ if [ -z "$YDB_INTERCONNECT_PORT" ]; then
   YDB_INTERCONNECT_PORT="19001"
 fi
 
+YDB_PDISK_CATEGORY_TYPE_KIND=$(echo $YDB_PDISK_CATEGORY_TYPE | tr '[:upper:]' '[:lower:]')
+
 cat << EOF > /ydb_data/config.yaml
 static_erasure: none
 host_configs:
@@ -55,13 +57,13 @@ hosts:
     rack: '1'
 domains_config:
   domain:
-  - name: Root
+  - name: local
     storage_pool_types:
-    - kind: ${YDB_PDISK_CATEGORY_TYPE}
+    - kind: ${YDB_PDISK_CATEGORY_TYPE_KIND}
       pool_config:
         box_id: 1
         erasure_species: none
-        kind: ${YDB_PDISK_CATEGORY_TYPE}
+        kind: ${YDB_PDISK_CATEGORY_TYPE_KIND}
         pdisk_filter:
         - property:
           - type: ${YDB_PDISK_CATEGORY_TYPE}
@@ -116,13 +118,13 @@ channel_profile_config:
   - channel:
     - erasure_species: none
       pdisk_category: ${YDB_PDISK_CATEGORY}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE_KIND}
     - erasure_species: none
       pdisk_category: ${YDB_PDISK_CATEGORY}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE_KIND}
     - erasure_species: none
       pdisk_category: ${YDB_PDISK_CATEGORY}
-      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE}
+      storage_pool_kind: ${YDB_PDISK_CATEGORY_TYPE_KIND}
     profile_id: 0
 grpc_config:
   host: '[::]'
@@ -131,16 +133,22 @@ grpc_config:
   key: ${YDB_GRPC_TLS_DATA_PATH}/key.pem
 EOF
 
+# disable checks of updates cli
+/bin/ydb version --disable-checks
+
 # start storage process
-/bin/ydbd server --node=1 --ca=${YDB_GRPC_TLS_DATA_PATH}/ca.pem --grpc-port=${GRPC_PORT} --grpcs-port=${GRPC_TLS_PORT} --yaml-config=/ydb_data/config.yaml --mon-port=8765 --ic-port=${YDB_INTERCONNECT_PORT}
+/bin/ydbd server --node=1 --ca=${YDB_GRPC_TLS_DATA_PATH}/ca.pem --grpc-port=${GRPC_PORT} --grpcs-port=${GRPC_TLS_PORT} --yaml-config=/ydb_data/config.yaml --mon-port=8765 --ic-port=${YDB_INTERCONNECT_PORT} &
+
+# wait for start
+sleep 3
 
 # initialize storage
 /bin/ydbd -s grpc://localhost:2136 admin blobstorage config init --yaml-file /ydb_data/config.yaml
 
 # register database
-/bin/ydbd -s grpc://localhost:2136 admin database /Root/local create ${YDB_PDISK_CATEGORY_TYPE}:1
+/bin/ydbd -s grpc://localhost:2136 admin database /local create ${YDB_PDISK_CATEGORY_TYPE_KIND}:1
 
-# disable checks of updates cli
-/bin/ydb version --disable-checks
+# start dynnode process
+/bin/ydbd server --yaml-config /ydb_data/config.yaml  --tenant /local --node-broker localhost:2136 --grpc-port 31001 --ic-port 31003 --mon-port 31002
 
 # sleep 3
