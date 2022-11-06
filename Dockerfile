@@ -17,11 +17,16 @@ RUN wget https://storage.yandexcloud.net/yandexcloud-ydb/release/${CLI_VERSION}/
 FROM ${ARCH}/busybox:glibc
 
 COPY ./ydb_certs/ ./ydb_certs
-COPY ./entrypoint.sh ./entrypoint.sh
 
+COPY ./entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
+
+COPY ./healthcheck.sh ./healthcheck.sh
+RUN chmod +x ./healthcheck.sh
 
 COPY --from=builder /build/ /
 COPY --from=builder /lib/x86_64-linux-gnu/ /lib/x86_64-linux-gnu/
+
+HEALTHCHECK --interval=1s CMD sh /healthcheck.sh
 
 CMD [ "/entrypoint.sh" ]

@@ -149,6 +149,4 @@ sleep 3
 /bin/ydbd -s grpc://localhost:2136 admin database /local create ${YDB_PDISK_CATEGORY_TYPE_KIND}:1
 
 # start dynnode process
-/bin/ydbd server --yaml-config /ydb_data/config.yaml  --tenant /local --node-broker localhost:2136 --grpc-port 31001 --ic-port 31003 --mon-port 31002
-
-# sleep 3
+/bin/ydbd server --yaml-config /ydb_data/config.yaml  --tenant /local --node-broker localhost:2136 --grpc-port 31001 --ic-port 31002 --mon-port 31003
