@@ -1,14 +1,14 @@
-package config
+package certs
 
 import (
 	"bytes"
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"github.com/asmyasnikov/ydb-docker/internal/env"
 	"math/big"
 	"os"
 	"time"
@@ -30,29 +30,18 @@ type Certs struct {
 	Key  string
 }
 
-func newCerts(ctx context.Context, persist bool) *Certs {
-	certs := &Certs{
-		Path: envYdbGrpcTlsDataPath(),
-		CA:   envYdbGrpcTlsDataPathCaPem(),
-		Cert: envYdbGrpcTlsDataPathCertPem(),
-		Key:  envYdbGrpcTlsDataPathKeyPem(),
-	}
-
+func (certs *Certs) Persist() error {
 	// check certificates path exists and create it if necessary
 	if _, err := os.Stat(certs.Path); errors.Is(err, os.ErrNotExist) {
-		if persist {
-			err = os.MkdirAll(certs.Path, 0777)
-			if err != nil {
-				panic(err)
-			}
+		err = os.MkdirAll(certs.Path, 0777)
+		if err != nil {
+			panic(err)
 		}
 	}
 
 	// check certificate files exists
 	if exists(certs.CA, certs.Cert, certs.Key) {
-		if persist {
-			return certs
-		}
+		return nil
 	}
 
 	// generate certificate
@@ -85,16 +74,23 @@ func newCerts(ctx context.Context, persist bool) *Certs {
 	if err = pem.Encode(&privateKey, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}); err != nil {
 		panic(err)
 	}
-	if persist {
-		if err = os.WriteFile(certs.CA, publicKey.Bytes(), 0644); err != nil {
-			panic(err)
-		}
-		if err = os.WriteFile(certs.Cert, publicKey.Bytes(), 0644); err != nil {
-			panic(err)
-		}
-		if err = os.WriteFile(certs.Key, privateKey.Bytes(), 0644); err != nil {
-			panic(err)
-		}
+	if err = os.WriteFile(certs.CA, publicKey.Bytes(), 0644); err != nil {
+		panic(err)
 	}
-	return certs
+	if err = os.WriteFile(certs.Cert, publicKey.Bytes(), 0644); err != nil {
+		panic(err)
+	}
+	if err = os.WriteFile(certs.Key, privateKey.Bytes(), 0644); err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func New() *Certs {
+	return &Certs{
+		Path: env.YdbGrpcTlsDataPath(),
+		CA:   env.YdbGrpcTlsDataPathCaPem(),
+		Cert: env.YdbGrpcTlsDataPathCertPem(),
+		Key:  env.YdbGrpcTlsDataPathKeyPem(),
+	}
 }

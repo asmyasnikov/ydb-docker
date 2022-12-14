@@ -1,10 +1,12 @@
-package config
+package env
 
 import (
 	"fmt"
 	"os"
 	"path"
 	"strconv"
+
+	"github.com/asmyasnikov/ydb-docker/internal/global"
 )
 
 const (
@@ -27,61 +29,52 @@ const (
 	monPort        = "MON_PORT"
 	monPortDefault = 8765
 
+	icPort        = "IC_PORT"
+	icPortDefault = 19001
+
 	ydbPdiskSizeGb                = "YDB_PDISK_SIZE"
 	ydbPdiskSizeGbDefault         = 80
 	ydbPdiskSizeGbInMemoryDefault = 64
 )
 
-func envYdbGrpcTlsDataPath() string {
+func YdbGrpcTlsDataPath() string {
 	if env, has := os.LookupEnv(ydbGrpcTlsDataPath); has {
 		return env
 	}
-	return path.Join(ydbWorkingDir, "ydb_certs")
+	return path.Join(global.YdbWorkingDir, "ydb_certs")
 }
 
-func envYdbGrpcTlsDataPathCaPem() string {
-	return path.Join(envYdbGrpcTlsDataPath(), "ca.pem")
+func YdbGrpcTlsDataPathCaPem() string {
+	return path.Join(YdbGrpcTlsDataPath(), "ca.pem")
 }
 
-func envYdbGrpcTlsDataPathCertPem() string {
-	return path.Join(envYdbGrpcTlsDataPath(), "cert.pem")
+func YdbGrpcTlsDataPathCertPem() string {
+	return path.Join(YdbGrpcTlsDataPath(), "cert.pem")
 }
 
-func envYdbGrpcTlsDataPathKeyPem() string {
-	return path.Join(envYdbGrpcTlsDataPath(), "key.pem")
+func YdbGrpcTlsDataPathKeyPem() string {
+	return path.Join(YdbGrpcTlsDataPath(), "key.pem")
 }
 
-func envYdbDataPath() string {
+func YdbDataPath() string {
 	if env, has := os.LookupEnv(ydbDataPath); has {
 		return env
 	}
-	return path.Join(ydbWorkingDir, "ydb_data")
+	return path.Join(global.YdbWorkingDir, "ydb_data")
 }
 
-func envYdbConfigPath() string {
-	return path.Join(envYdbDataPath(), "config.yaml")
+func YdbConfigPath() string {
+	return path.Join(YdbDataPath(), "config.yaml")
 }
 
-func envBindLocalStorageRequest() string {
-	return path.Join(envYdbDataPath(), "bind-storage.yaml")
-}
-
-func envDefineStoragePoolsRequest() string {
-	return path.Join(envYdbDataPath(), "define-storage-pools.yaml")
-}
-
-func envTenantPoolConfig() string {
-	return path.Join(envYdbDataPath(), "tenant-pool.yaml")
-}
-
-func envYdbPdiskPath() string {
-	if envYdbUseInMemoryPdisks() {
-		return "SectorMap:1:" + strconv.Itoa(envYdbPdiskSizeGb())
+func YdbPdiskPath() string {
+	if YdbUseInMemoryPdisks() {
+		return "SectorMap:1:" + strconv.Itoa(YdbPdiskSizeGb())
 	}
-	return path.Join(envYdbDataPath(), "ydb.data")
+	return path.Join(YdbDataPath(), "ydb.data")
 }
 
-func envYdbPdiskSizeGb() int {
+func YdbPdiskSizeGb() int {
 	if env, has := os.LookupEnv(ydbPdiskSizeGb); has {
 		if v, err := parseBytes(env); err != nil {
 			panic(fmt.Errorf("cannot parse value '%s' of env '%s': %w", env, ydbPdiskSizeGb, err))
@@ -89,13 +82,13 @@ func envYdbPdiskSizeGb() int {
 			return int(v / GByte)
 		}
 	}
-	if envYdbUseInMemoryPdisks() {
+	if YdbUseInMemoryPdisks() {
 		return ydbPdiskSizeGbInMemoryDefault
 	}
 	return ydbPdiskSizeGbDefault
 }
 
-func envYdbUseInMemoryPdisks() bool {
+func YdbUseInMemoryPdisks() bool {
 	if env, has := os.LookupEnv(ydbUseInMemoryPdisks); has {
 		b, err := strconv.ParseBool(env)
 		if err != nil {
@@ -106,7 +99,7 @@ func envYdbUseInMemoryPdisks() bool {
 	return ydbUseInMemoryPdisksDefault
 }
 
-func envYdbDefaultLogLevel() int {
+func YdbDefaultLogLevel() int {
 	if env, has := os.LookupEnv(ydbDefaultLogLevel); has {
 		switch env {
 		case "CRIT":
@@ -126,7 +119,7 @@ func envYdbDefaultLogLevel() int {
 	return ydbDefaultLogLevelDefault
 }
 
-func envGrpcPort() int {
+func YdbGrpcPort() int {
 	if env, has := os.LookupEnv(grpcPort); has {
 		v, err := strconv.Atoi(env)
 		if err != nil {
@@ -137,7 +130,7 @@ func envGrpcPort() int {
 	return grpcPortDefault
 }
 
-func envGrpcTlsPort() int {
+func YdbGrpcTlsPort() int {
 	if env, has := os.LookupEnv(grpcTlsPort); has {
 		v, err := strconv.Atoi(env)
 		if err != nil {
@@ -148,7 +141,7 @@ func envGrpcTlsPort() int {
 	return grpcTlsPortDefault
 }
 
-func envMonPort() int {
+func YdbMonPort() int {
 	if env, has := os.LookupEnv(monPort); has {
 		v, err := strconv.Atoi(env)
 		if err != nil {
@@ -157,4 +150,15 @@ func envMonPort() int {
 		return v
 	}
 	return monPortDefault
+}
+
+func YdbIcPort() int {
+	if env, has := os.LookupEnv(icPort); has {
+		v, err := strconv.Atoi(env)
+		if err != nil {
+			panic(fmt.Errorf("cannot parse value '%s' of env '%s': %w", env, icPort, err))
+		}
+		return v
+	}
+	return icPortDefault
 }

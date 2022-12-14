@@ -8,7 +8,7 @@ hosts:
   - host: localhost
     node_id: 1
     host_config_id: 1
-    port: 19001
+    port: {{ IC_PORT }}
     walle_location:
       body: 1
       data_center: '1'
