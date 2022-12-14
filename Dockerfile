@@ -12,19 +12,23 @@ RUN mkdir -p /build/etc/ssl && cp -r /etc/ssl/certs /build/etc/ssl/certs
 
 RUN chmod +x ./bin/ydbd
 
-# RUN upx ./bin/ydbd
+RUN upx ./bin/ydbd
+
+RUN mv ./bin/ydbd ./
 
 RUN chmod +x ./bin/ydb
 
-# RUN upx ./bin/ydb
+RUN upx ./bin/ydb
 
-RUN chmod +x ./local_ydb
+RUN mv ./bin/ydb ./
 
-# RUN upx ./local_ydb
+RUN chmod +x ./entrypoint
 
-COPY ./initialize_local_ydb.sh ./initialize_local_ydb
+RUN upx ./entrypoint
 
-RUN chmod +x ./initialize_local_ydb
+RUN mkdir -p ./root/ydb/bin/
+
+RUN echo '{"check_version":false}' > ./root/ydb/bin/config.json
 
 COPY ./health_check.sh ./health_check.sh
 
@@ -37,4 +41,4 @@ COPY --from=builder /lib/x86_64-linux-gnu/ /lib/x86_64-linux-gnu/
 
 HEALTHCHECK --interval=1s CMD sh /health_check.sh
 
-CMD ["/initialize_local_ydb"]
+CMD ["/entrypoint"]

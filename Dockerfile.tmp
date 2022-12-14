@@ -1,3 +1,0 @@
-FROM cr.yandex/yc/yandex-docker-local-ydb:latest
-
-CMD [ "bin/bash" ]

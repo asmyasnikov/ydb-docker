@@ -48,6 +48,32 @@ func main() {
 		panic(err)
 	}
 
+	//if err = func(ctx context.Context) error {
+	//	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	//	defer cancel()
+	//	for {
+	//		select {
+	//		case <-ctx.Done():
+	//			return ctx.Err()
+	//		default:
+	//			err := exec.CommandContext(ctx, "/ydb",
+	//				"-e",
+	//				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
+	//				"-d",
+	//				"/local",
+	//				"scheme",
+	//				"ls",
+	//			)
+	//			if err == nil {
+	//				return nil
+	//			}
+	//		}
+	//	}
+	//}(ctx); err != nil {
+	//	panic(err)
+	//}
+
+	// /ydb -e grpc://localhost:2136 -d /local scheme ls
 	time.Sleep(time.Second)
 
 	if needToPrepare {

@@ -21,6 +21,11 @@ func init() {
 }
 
 func Parse() (*config.Config, error) {
+	if len(os.Args) == 1 {
+		deployCmd.Parse([]string{})
+		return config.New(config.ModeDeploy)
+	}
+
 	switch os.Args[1] {
 	case "deploy":
 		deployCmd.Parse(os.Args[2:])
