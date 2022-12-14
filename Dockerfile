@@ -12,15 +12,15 @@ RUN mkdir -p /build/etc/ssl && cp -r /etc/ssl/certs /build/etc/ssl/certs
 
 RUN chmod +x ./bin/ydbd
 
-RUN upx ./bin/ydbd
+# RUN upx ./bin/ydbd
 
 RUN chmod +x ./bin/ydb
 
-RUN upx ./bin/ydb
+# RUN upx ./bin/ydb
 
 RUN chmod +x ./local_ydb
 
-RUN upx ./local_ydb
+# RUN upx ./local_ydb
 
 COPY ./initialize_local_ydb.sh ./initialize_local_ydb
 
