@@ -6,7 +6,7 @@ COPY ./artifacts /build
 
 WORKDIR /build
 
-RUN apt update && apt install -y ca-certificates upx 
+RUN apt update && apt install -y ca-certificates upx
 
 RUN mkdir -p /build/etc/ssl && cp -r /etc/ssl/certs /build/etc/ssl/certs
 

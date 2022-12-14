@@ -1,174 +1,136 @@
 package config
 
 import (
+	"context"
 	_ "embed"
 	"errors"
-	"fmt"
-	"github.com/asmyasnikov/ydb-docker/internal/certs"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
 	"text/template"
 )
 
 var (
-	//go:embed config.yml
+	//go:embed templates/config.yaml
 	config string
+
+	//go:embed templates/bind-storage.request
+	bindLocalStorageRequest string
+
+	//go:embed templates/define-storage-pools.request
+	defineStoragePools string
+
+	//go:embed templates/tenant-pool.config
+	tenantPoolConfig string
 )
 
 type Config struct {
-	RamDisk bool
-	Ports   struct {
-		Grpc  string
-		Grpcs string
-		Mon   string
+	WorkingDir                string
+	BinaryPath                string
+	ConfigPath                string
+	BindStorageRequest        string
+	DefineStoragePoolsRequest string
+	TenantPoolConfig          string
+	UseInMemoryPdisks         bool
+	Ports                     struct {
+		Grpc  int
+		Grpcs int
+		Mon   int
 	}
-	LogLevel string
-	Data     struct {
+	LogLevel int
+	Pdisk    struct {
 		Path   string
-		Config string
-		Pdisk  struct {
-			Path   string
-			SizeGb string
-		}
+		SizeGb int
 	}
-	Certs *certs.Certs
+	Certs *Certs
 }
 
-func New(persist bool) (_ *Config, err error) {
+func New(ctx context.Context, persist bool) *Config {
 	cfg := &Config{
-		LogLevel: "5",
+		WorkingDir:                envYdbDataPath(),
+		BinaryPath:                ydbBinaryPath,
+		ConfigPath:                envYdbConfigPath(),
+		BindStorageRequest:        envBindLocalStorageRequest(),
+		DefineStoragePoolsRequest: envDefineStoragePoolsRequest(),
+		TenantPoolConfig:          envTenantPoolConfig(),
+		LogLevel:                  envYdbDefaultLogLevel(),
 		Ports: struct {
-			Grpc  string
-			Grpcs string
-			Mon   string
+			Grpc  int
+			Grpcs int
+			Mon   int
 		}{
-			Grpc:  "2136",
-			Grpcs: "2135",
-			Mon:   "8765",
+			Grpc:  envGrpcPort(),
+			Grpcs: envGrpcTlsPort(),
+			Mon:   envMonPort(),
 		},
-		Data: struct {
+		Certs: newCerts(ctx, persist),
+		Pdisk: struct {
 			Path   string
-			Config string
-			Pdisk  struct {
-				Path   string
-				SizeGb string
-			}
+			SizeGb int
 		}{
-			Path:   "/ydb_data/",
-			Config: "/ydb_data/config.yml",
-			Pdisk: struct {
-				Path   string
-				SizeGb string
-			}{
-				Path:   "/ydb_data/ydb.data",
-				SizeGb: "80GB",
-			},
+			Path:   envYdbPdiskPath(),
+			SizeGb: envYdbPdiskSizeGb(),
 		},
-		Certs: &certs.Certs{
-			Path: "/ydb_certs/",
-			CA:   "/ydb_certs/ca.pem",
-			Cert: "/ydb_certs/cert.pem",
-			Key:  "/ydb_certs/key.pem",
-		},
-		RamDisk: false,
-	}
-
-	if env, has := os.LookupEnv("YDB_DATA_PATH"); has {
-		cfg.Data.Path = env
-		cfg.Data.Config = path.Join(env, "config.yml")
-		cfg.Data.Pdisk.Path = path.Join(env, "ydb.data")
-	}
-
-	cfg.Certs, err = certs.New(persist)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, has := os.LookupEnv("YDB_USE_IN_MEMORY_PDISKS"); has {
-		cfg.RamDisk = true
-	}
-
-	if env, has := os.LookupEnv("YDB_DEFAULT_LOG_LEVEL"); has {
-		switch env {
-		case "CRIT":
-			cfg.LogLevel = "2"
-		case "ERROR":
-			cfg.LogLevel = "3"
-		case "WARN":
-			cfg.LogLevel = "4"
-		case "NOTICE":
-			cfg.LogLevel = "5"
-		case "INFO":
-			cfg.LogLevel = "6"
-		default:
-			return nil, fmt.Errorf("unknow log level: %s", env)
-		}
-	}
-
-	if env, has := os.LookupEnv("GRPC_PORT"); has {
-		cfg.Ports.Grpc = env
-	}
-
-	if env, has := os.LookupEnv("GRPC_TLS_PORT"); has {
-		cfg.Ports.Grpcs = env
-	}
-
-	if env, has := os.LookupEnv("MON_PORT"); has {
-		cfg.Ports.Mon = env
-	}
-
-	if cfg.RamDisk {
-		cfg.Data.Pdisk.Path = "SectorMap:1:64"
-	}
-
-	if env, has := os.LookupEnv("YDB_PDISK_SIZE"); has {
-		cfg.Data.Pdisk.SizeGb = env
-		if cfg.RamDisk {
-			cfg.Data.Pdisk.SizeGb = "SectorMap:1:" + strings.ReplaceAll(cfg.Data.Pdisk.SizeGb, "GB", "")
-		}
+		UseInMemoryPdisks: envYdbUseInMemoryPdisks(),
 	}
 
 	var buffer strings.Builder
 	if err := template.Must(template.New("").Funcs(template.FuncMap{
 		"YDB_PDISK_PATH": func() string {
-			return cfg.Data.Pdisk.Path
+			return cfg.Pdisk.Path
 		},
-		"YDB_DEFAULT_LOG_LEVEL": func() string {
+		"YDB_DEFAULT_LOG_LEVEL": func() int {
 			return cfg.LogLevel
 		},
-		"GRPC_PORT": func() string {
+		"GRPC_PORT": func() int {
 			return cfg.Ports.Grpc
 		},
-		"GRPC_TLS_PORT": func() string {
+		"GRPC_TLS_PORT": func() int {
 			return cfg.Ports.Grpcs
 		},
-		"MON_PORT": func() string {
+		"MON_PORT": func() int {
 			return cfg.Ports.Mon
 		},
-		"YDB_PDISK_SIZE": func() string {
-			return cfg.Data.Pdisk.SizeGb
+		"YDB_PDISK_SIZE": func() int {
+			return cfg.Pdisk.SizeGb
+		},
+		"YDB_CERTS_CA_PEM": func() string {
+			return cfg.Certs.CA
+		},
+		"YDB_CERTS_CERT_PEM": func() string {
+			return cfg.Certs.Cert
+		},
+		"YDB_CERTS_KEY_PEM": func() string {
+			return cfg.Certs.Key
 		},
 	}).Parse(config)).Execute(&buffer, nil); err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	if persist {
-		if _, err := os.Stat(cfg.Data.Path); errors.Is(err, os.ErrNotExist) {
-			if err = os.MkdirAll(filepath.Dir(cfg.Data.Path), 0777); err != nil {
-				return nil, err
-			}
-		}
-
-		if err := os.WriteFile(cfg.Data.Config, []byte(buffer.String()), 0644); err != nil {
-			return nil, err
-		}
-
-	} else {
-		cfg.Data.Config = buffer.String()
+	if !persist {
+		return cfg
 	}
 
-	return cfg, nil
+	if _, err := os.Stat(envYdbDataPath()); errors.Is(err, os.ErrNotExist) {
+		if err = os.MkdirAll(envYdbDataPath(), 0777); err != nil {
+			panic(err)
+		}
+	}
 
+	if err := os.WriteFile(cfg.ConfigPath, []byte(buffer.String()), 0644); err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile(cfg.BindStorageRequest, []byte(bindLocalStorageRequest), 0644); err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile(cfg.DefineStoragePoolsRequest, []byte(defineStoragePools), 0644); err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile(cfg.TenantPoolConfig, []byte(tenantPoolConfig), 0644); err != nil {
+		panic(err)
+	}
+
+	return cfg
 }

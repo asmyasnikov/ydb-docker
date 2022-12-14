@@ -1,5 +1,5 @@
-YDB_VERSION = 22.4.31
-CLI_VERSION = 2.0.0
+YDB_VERSION = 22.4.44
+CLI_VERSION = 2.1.0
 IMAGE=ydb-platform/yandex-docker-local-ydb
 TAG=$(YDB_VERSION)
 
@@ -12,11 +12,7 @@ download-ydbd: artifacts
 download-cli: artifacts
 	cd artifacts/bin && wget https://storage.yandexcloud.net/yandexcloud-ydb/release/${CLI_VERSION}/linux/amd64/ydb;
 
-download-init: artifacts
-	# temponary 
-	docker run --rm --entrypoint /bin/sh cr.yandex/yc/yandex-docker-local-ydb:latest -c "cat /local_ydb" > ./artifacts/local_ydb
-
-download: download-ydbd download-cli download-init
+download: download-ydbd download-cli
 	# nothing to do for this target
 
 clone:

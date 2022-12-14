@@ -1,7 +1,8 @@
-package certs
+package config
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -10,7 +11,6 @@ import (
 	"errors"
 	"math/big"
 	"os"
-	"path"
 	"time"
 )
 
@@ -30,26 +30,20 @@ type Certs struct {
 	Key  string
 }
 
-func New(persist bool) (_ *Certs, err error) {
+func newCerts(ctx context.Context, persist bool) *Certs {
 	certs := &Certs{
-		Path: "/ydb_certs/",
-		CA:   "/ydb_certs/ca.pem",
-		Cert: "/ydb_certs/cert.pem",
-		Key:  "/ydb_certs/key.pem",
-	}
-	if env, has := os.LookupEnv("YDB_GRPC_TLS_DATA_PATH"); has {
-		certs.Path = env
-		certs.CA = path.Join(env, "ca.pem")
-		certs.Cert = path.Join(env, "cert.pem")
-		certs.Key = path.Join(env, "key.pem")
+		Path: envYdbGrpcTlsDataPath(),
+		CA:   envYdbGrpcTlsDataPathCaPem(),
+		Cert: envYdbGrpcTlsDataPathCertPem(),
+		Key:  envYdbGrpcTlsDataPathKeyPem(),
 	}
 
 	// check certificates path exists and create it if necessary
-	if _, err = os.Stat(certs.Path); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(certs.Path); errors.Is(err, os.ErrNotExist) {
 		if persist {
 			err = os.MkdirAll(certs.Path, 0777)
 			if err != nil {
-				return
+				panic(err)
 			}
 		}
 	}
@@ -57,23 +51,7 @@ func New(persist bool) (_ *Certs, err error) {
 	// check certificate files exists
 	if exists(certs.CA, certs.Cert, certs.Key) {
 		if persist {
-			return certs, nil
-		} else {
-			bb, err := os.ReadFile(certs.CA)
-			if err != nil {
-				return nil, err
-			}
-			certs.CA = string(bb)
-			bb, err = os.ReadFile(certs.Cert)
-			if err != nil {
-				return nil, err
-			}
-			certs.Cert = string(bb)
-			bb, err = os.ReadFile(certs.Key)
-			if err != nil {
-				return nil, err
-			}
-			certs.Key = string(bb)
+			return certs
 		}
 	}
 
@@ -89,7 +67,7 @@ func New(persist bool) (_ *Certs, err error) {
 	}
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
-		return certs, err
+		panic(err)
 	}
 	crt, err := x509.CreateCertificate(rand.Reader,
 		&template,
@@ -98,29 +76,25 @@ func New(persist bool) (_ *Certs, err error) {
 		key,
 	)
 	if err != nil {
-		return certs, err
+		panic(err)
 	}
 	var publicKey, privateKey bytes.Buffer
 	if err = pem.Encode(&publicKey, &pem.Block{Type: "CERTIFICATE", Bytes: crt}); err != nil {
-		return certs, err
+		panic(err)
 	}
 	if err = pem.Encode(&privateKey, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)}); err != nil {
-		return certs, err
+		panic(err)
 	}
 	if persist {
 		if err = os.WriteFile(certs.CA, publicKey.Bytes(), 0644); err != nil {
-			return certs, err
+			panic(err)
 		}
 		if err = os.WriteFile(certs.Cert, publicKey.Bytes(), 0644); err != nil {
-			return certs, err
+			panic(err)
 		}
 		if err = os.WriteFile(certs.Key, privateKey.Bytes(), 0644); err != nil {
-			return certs, err
+			panic(err)
 		}
-	} else {
-		certs.CA = publicKey.String()
-		certs.Cert = publicKey.String()
-		certs.Key = publicKey.String()
 	}
-	return certs, nil
+	return certs
 }
