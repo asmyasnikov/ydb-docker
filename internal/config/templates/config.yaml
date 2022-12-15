@@ -116,6 +116,8 @@ grpc_config:
     - import
     - yq
     - keyvalue
+    - topic
+    - auth
 kqpconfig:
   settings:
     - name: _ResultRowsLimit
