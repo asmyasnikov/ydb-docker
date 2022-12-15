@@ -110,8 +110,8 @@ func main() {
 				"invoke",
 				"--proto-file="+cfg.DefineStoragePoolsRequest,
 			)
-			defineStoragePoolProcess.Stdout = prefixed("[define storage pool] ", os.Stdout)
-			defineStoragePoolProcess.Stderr = prefixed("[define storage pool] ", os.Stderr)
+			defineStoragePoolProcess.Stdout = prefixed("[DEFINE STORAGE POOL] ", os.Stdout)
+			defineStoragePoolProcess.Stderr = prefixed("[DEFINE STORAGE POOL] ", os.Stderr)
 
 			log.Println(defineStoragePoolProcess.String())
 
