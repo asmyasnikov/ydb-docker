@@ -15,6 +15,7 @@ var (
 		Colour("\u001b[38;5;34m"),
 		Colour("\u001b[38;5;178m"),
 		Colour("\u001b[38;5;208m"),
+		Colour("\u001b[38;5;166m"),
 	}
 )
 

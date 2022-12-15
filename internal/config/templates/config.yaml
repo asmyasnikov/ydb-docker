@@ -130,45 +130,12 @@ domains_config:
               - property:
                   - type: ROT
             vdisk_kind: Default
-        - kind: ssd1
-          pool_config:
-            box_id: 1
-            erasure_species: none
-            kind: ssd
-            pdisk_filter:
-              - property:
-                  - type: ROT
-            vdisk_kind: Default
-        - kind: ssd2
-          pool_config:
-            box_id: 1
-            erasure_species: none
-            kind: ssd
-            pdisk_filter:
-              - property:
-                  - type: ROT
-            vdisk_kind: Default
-        - kind: ssde
-          pool_config:
-            box_id: 1
-            encryption_mode: 1
-            erasure_species: none
-            kind: ssd
-            pdisk_filter:
-              - property:
-                  - type: ROT
-            vdisk_kind: Default
   state_storage:
     - ring:
         node:
           - 1
         nto_select: 1
       ssid: 1
-feature_flags:
-  enable_mvcc: VALUE_TRUE
-  enable_persistent_query_stats: true
-  enable_public_api_external_blobs: false
-  enable_scheme_transactions_at_scheme_shard: true
 grpc_config:
   host: '[::]'
   ca: {{ YDB_CERTS_CA_PEM }}

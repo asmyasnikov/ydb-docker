@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"os/signal"
 	"path"
@@ -22,12 +23,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer cfg.Cleanup()
 
 	needToPrepare, err := cfg.Persist(path.Join(cfg.WorkingDir, "config.yaml"))
 	if err != nil {
 		panic(err)
 	}
+
+	recipe, err := os.OpenFile(path.Join(cfg.WorkingDir, "ydb_recipe.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer recipe.Close()
+
+	_, _ = recipe.WriteString(fmt.Sprintf("======== " + time.Now().Format("2006-01-02 15:04:05") + " ========\n"))
 
 	run := exec.CommandContext(ctx, cfg.BinaryPath,
 		"server",
@@ -38,9 +46,11 @@ func main() {
 		"--mon-port="+strconv.Itoa(cfg.Ports.Mon),
 		"--ic-port="+strconv.Itoa(cfg.Ports.Ic),
 		"--yaml-config="+cfg.YdbConfig,
-		"--tenant-pool-file="+cfg.TenantPoolConfig,
 	)
-	run.Stdout, run.Stderr = log.Colored(log.NextColour())
+
+	_, _ = recipe.WriteString(run.String() + "\n")
+
+	run.Stdout, run.Stderr = os.Stdout, os.Stderr
 
 	fmt.Fprintln(run.Stdout, run.String())
 
@@ -63,6 +73,9 @@ func main() {
 				"--yaml-file",
 				cfg.YdbConfig,
 			)
+
+			_, _ = recipe.WriteString(cmd.String() + "\n")
+
 			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
 
 			fmt.Fprintln(cmd.Stdout, cmd.String())
@@ -78,11 +91,14 @@ func main() {
 				"-s",
 				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
 				"admin",
-				"bs",
+				"blobstorage",
 				"config",
 				"invoke",
 				"--proto-file="+cfg.DefineStoragePoolsRequest,
 			)
+
+			_, _ = recipe.WriteString(cmd.String() + "\n")
+
 			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
 
 			fmt.Fprintln(cmd.Stdout, cmd.String())
@@ -102,6 +118,32 @@ func main() {
 				"execute",
 				cfg.BindStorageRequest,
 			)
+
+			_, _ = recipe.WriteString(cmd.String() + "\n")
+
+			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
+
+			fmt.Fprintln(cmd.Stdout, cmd.String())
+
+			if err = cmd.Run(); err != nil {
+				panic(err)
+			}
+		}
+
+		// apply table profile config
+		{
+			cmd := exec.CommandContext(ctx, cfg.BinaryPath,
+				"-s",
+				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
+				"admin",
+				"console",
+				"configs",
+				"update",
+				cfg.TableProfilesConfig,
+			)
+
+			_, _ = recipe.WriteString(cmd.String() + "\n")
+
 			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
 
 			fmt.Fprintln(cmd.Stdout, cmd.String())
@@ -112,7 +154,6 @@ func main() {
 		}
 	}
 	if err = run.Wait(); err != nil {
-		fmt.Fprintln(run.Stderr, err.Error())
 		panic(err)
 	}
 }

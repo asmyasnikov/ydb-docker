@@ -1,0 +1,81 @@
+Actions {
+  AddConfigItem {
+    ConfigItem {
+      Config {
+        TableProfilesConfig {
+          CompactionPolicies {
+            Name: "default"
+          }
+          ExecutionPolicies {
+            Name: "default"
+          }
+          PartitioningPolicies {
+            Name: "default"
+            AutoSplit: true
+            AutoMerge: false
+            SizeToSplit: 2147483648
+          }
+          StoragePolicies {
+            Name: "log_lz4"
+            ColumnFamilies {
+              ColumnCodec: ColumnCodecLZ4
+              StorageConfig {
+                SysLog {
+                  PreferredPoolKind: "ssd"
+                }
+                Log {
+                  PreferredPoolKind: "ssd"
+                }
+                Data {
+                  PreferredPoolKind: "ssd"
+                }
+              }
+            }
+          }
+          StoragePolicies {
+            Name: "default"
+            ColumnFamilies {
+              StorageConfig {
+                SysLog {
+                  PreferredPoolKind: "ssd"
+                }
+                Log {
+                  PreferredPoolKind: "ssd"
+                }
+                Data {
+                  PreferredPoolKind: "ssd"
+                }
+              }
+            }
+          }
+          ReplicationPolicies {
+            Name: "default"
+          }
+          CachingPolicies {
+            Name: "default"
+            # Note: code-level default is 32MB
+            # ExecutorCacheSize: 4194304
+          }
+          TableProfiles {
+            Name: "default"
+            CompactionPolicy: "default"
+            ExecutionPolicy: "default"
+            PartitioningPolicy: "default"
+            StoragePolicy: "default"
+            ReplicationPolicy: "default"
+            CachingPolicy: "default"
+          }
+          TableProfiles {
+            Name: "log_lz4"
+            CompactionPolicy: "default"
+            ExecutionPolicy: "default"
+            PartitioningPolicy: "default"
+            StoragePolicy: "log_lz4"
+            ReplicationPolicy: "default"
+            CachingPolicy: "default"
+          }
+        }
+      }
+    }
+  }
+}

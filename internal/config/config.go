@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -17,14 +18,14 @@ var (
 	//go:embed templates/config.yaml
 	config string
 
-	//go:embed templates/bind-storage.request
+	//go:embed templates/bind_storage_request.txt
 	bindLocalStorageRequest string
 
-	//go:embed templates/define-storage-pools.request
+	//go:embed templates/define_storage_pools_request.txt
 	defineStoragePools string
 
-	//go:embed templates/tenant-pool.config
-	tenantPoolConfig string
+	//go:embed templates/table_profile_request.txt
+	tableProfilesConfig string
 )
 
 type Mode int
@@ -41,7 +42,7 @@ type Config struct {
 	YdbConfig                 string
 	BindStorageRequest        string
 	DefineStoragePoolsRequest string
-	TenantPoolConfig          string
+	TableProfilesConfig       string
 	UseInMemoryPdisks         bool
 	Ports                     struct {
 		Grpc  int
@@ -55,8 +56,16 @@ type Config struct {
 		SizeGb int
 	}
 	Certs *certs.Certs
+}
 
-	tmpFiles []string
+func swapContentToFileIfNotExists(filePath string, content *string) error {
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+		if err = os.WriteFile(filePath, []byte(*content), 0644); err != nil {
+			return err
+		}
+	}
+	*content = filePath
+	return nil
 }
 
 func (cfg *Config) Persist(filePath string) (hasChanges bool, _ error) {
@@ -77,11 +86,15 @@ func (cfg *Config) Persist(filePath string) (hasChanges bool, _ error) {
 		return false, err
 	}
 
+	if _, err := os.Stat(cfg.WorkingDir); errors.Is(err, os.ErrNotExist) {
+		if err = os.MkdirAll(filepath.Dir(cfg.WorkingDir), 0777); err != nil {
+			return false, err
+		}
+	}
+
 	if !cfg.UseInMemoryPdisks {
 		if _, err := os.Stat(cfg.Pdisk.Path); errors.Is(err, os.ErrNotExist) {
-			if err = os.MkdirAll(filepath.Dir(cfg.Pdisk.Path), 0777); err != nil {
-				return false, err
-			}
+			// fallocate
 			pdiskFile, err := os.OpenFile(cfg.Pdisk.Path, os.O_WRONLY|os.O_CREATE, 0666)
 			if err != nil {
 				return false, err
@@ -96,52 +109,19 @@ func (cfg *Config) Persist(filePath string) (hasChanges bool, _ error) {
 		hasChanges = true
 	}
 
-	{
-		t, err := os.CreateTemp("", "tenant-pool.*.yaml")
-		if err != nil {
-			panic(err)
-		}
-		if _, err = t.WriteString(cfg.TenantPoolConfig); err != nil {
-			panic(err)
-		}
-		t.Close()
-		cfg.tmpFiles = append(cfg.tmpFiles, t.Name())
-		cfg.TenantPoolConfig = t.Name()
+	if err := swapContentToFileIfNotExists(path.Join(cfg.WorkingDir, "define_storage_pools_request.txt"), &cfg.DefineStoragePoolsRequest); err != nil {
+		return false, err
 	}
 
-	{
-		t, err := os.CreateTemp("", "define-storage-pools-request.*.yaml")
-		if err != nil {
-			panic(err)
-		}
-		if _, err = t.WriteString(cfg.DefineStoragePoolsRequest); err != nil {
-			panic(err)
-		}
-		t.Close()
-		cfg.tmpFiles = append(cfg.tmpFiles, t.Name())
-		cfg.DefineStoragePoolsRequest = t.Name()
+	if err := swapContentToFileIfNotExists(path.Join(cfg.WorkingDir, "bind_storage_request.txt"), &cfg.BindStorageRequest); err != nil {
+		return false, err
 	}
 
-	{
-		t, err := os.CreateTemp("", "bind-storage-request.*.yaml")
-		if err != nil {
-			panic(err)
-		}
-		if _, err = t.WriteString(cfg.BindStorageRequest); err != nil {
-			panic(err)
-		}
-		t.Close()
-		cfg.tmpFiles = append(cfg.tmpFiles, t.Name())
-		cfg.BindStorageRequest = t.Name()
+	if err := swapContentToFileIfNotExists(path.Join(cfg.WorkingDir, "table_profile_config.txt"), &cfg.TableProfilesConfig); err != nil {
+		return false, err
 	}
 
 	return hasChanges, nil
-}
-
-func (cfg *Config) Cleanup() {
-	for _, f := range cfg.tmpFiles {
-		os.Remove(f)
-	}
 }
 
 func New(m Mode) (*Config, error) {
@@ -222,8 +202,8 @@ func New(m Mode) (*Config, error) {
 	}
 
 	cfg.BindStorageRequest = processTemplate(bindLocalStorageRequest)
-	cfg.TenantPoolConfig = processTemplate(tenantPoolConfig)
 	cfg.DefineStoragePoolsRequest = processTemplate(defineStoragePools)
+	cfg.TableProfilesConfig = processTemplate(tableProfilesConfig)
 	cfg.YdbConfig = processTemplate(config)
 
 	return cfg, nil
