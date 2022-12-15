@@ -39,17 +39,12 @@ func (certs *Certs) Persist() error {
 		}
 	}
 
-	// check certificate files exists
-	if exists(certs.CA, certs.Cert, certs.Key) {
-		return nil
-	}
-
 	// generate certificate
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(time.Now().Unix()),
 		Subject:      pkix.Name{Organization: []string{"localhost"}},
-		NotBefore:    time.Now().AddDate(0, 0, 7),
-		NotAfter:     time.Now().AddDate(1, 0, 7),
+		NotBefore:    time.Now().AddDate(-1, 0, 0),
+		NotAfter:     time.Now().AddDate(100, 0, 0),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		DNSNames:     []string{"localhost"},
