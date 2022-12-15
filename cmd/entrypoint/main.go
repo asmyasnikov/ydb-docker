@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"github.com/asmyasnikov/ydb-docker/internal/flags"
-	"github.com/asmyasnikov/ydb-docker/internal/writer"
-	"log"
-	"os"
+	"fmt"
 	"os/exec"
 	"os/signal"
 	"path"
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/asmyasnikov/ydb-docker/internal/flags"
+	"github.com/asmyasnikov/ydb-docker/internal/log"
 )
 
 func main() {
@@ -40,42 +40,15 @@ func main() {
 		"--yaml-config="+cfg.YdbConfig,
 		"--tenant-pool-file="+cfg.TenantPoolConfig,
 	)
-	run.Stdout = writer.Prefixed("[RUN] ", os.Stdout)
-	run.Stderr = writer.Prefixed("[RUN] ", os.Stderr)
+	run.Stdout, run.Stderr = log.Colored(log.NextColour())
 
-	log.Println(run.String())
+	fmt.Fprintln(run.Stdout, run.String())
 
-	if err := run.Start(); err != nil {
+	if err = run.Start(); err != nil {
 		panic(err)
 	}
 
-	//if err = func(ctx context.Context) error {
-	//	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
-	//	defer cancel()
-	//	for {
-	//		select {
-	//		case <-ctx.Done():
-	//			return ctx.Err()
-	//		default:
-	//			err := exec.CommandContext(ctx, "/ydb",
-	//				"-e",
-	//				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
-	//				"-d",
-	//				"/local",
-	//				"scheme",
-	//				"ls",
-	//			)
-	//			if err == nil {
-	//				return nil
-	//			}
-	//		}
-	//	}
-	//}(ctx); err != nil {
-	//	panic(err)
-	//}
-
-	// /ydb -e grpc://localhost:2136 -d /local scheme ls
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 3)
 
 	if needToPrepare {
 		// initialize storage
@@ -90,36 +63,14 @@ func main() {
 				"--yaml-file",
 				cfg.YdbConfig,
 			)
-			cmd.Stdout = writer.Prefixed("[INIT STORAGE] ", os.Stdout)
-			cmd.Stderr = writer.Prefixed("[INIT STORAGE] ", os.Stderr)
+			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
 
-			log.Println(cmd.String())
+			fmt.Fprintln(cmd.Stdout, cmd.String())
 
-			if err := cmd.Run(); err != nil {
+			if err = cmd.Run(); err != nil {
 				panic(err)
 			}
 		}
-
-		//// register database
-		//{
-		//	cmd := exec.CommandContext(ctx, cfg.BinaryPath,
-		//		"-s",
-		//		"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
-		//		"admin",
-		//		"database",
-		//		"/local",
-		//		"create",
-		//		"ssd:1",
-		//	)
-		//	cmd.Stdout = Prefixed("[REGISTER DATABASE] ", os.Stdout)
-		//	cmd.Stderr = Prefixed("[REGISTER DATABASE] ", os.Stderr)
-		//
-		//	log.Println(cmd.String())
-		//
-		//	if err := cmd.Run(); err != nil {
-		//		panic(err)
-		//	}
-		//}
 
 		// define storage pool
 		{
@@ -132,12 +83,11 @@ func main() {
 				"invoke",
 				"--proto-file="+cfg.DefineStoragePoolsRequest,
 			)
-			cmd.Stdout = writer.Prefixed("[DEFINE STORAGE POOL] ", os.Stdout)
-			cmd.Stderr = writer.Prefixed("[DEFINE STORAGE POOL] ", os.Stderr)
+			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
 
-			log.Println(cmd.String())
+			fmt.Fprintln(cmd.Stdout, cmd.String())
 
-			if err := cmd.Run(); err != nil {
+			if err = cmd.Run(); err != nil {
 				panic(err)
 			}
 		}
@@ -152,17 +102,17 @@ func main() {
 				"execute",
 				cfg.BindStorageRequest,
 			)
-			cmd.Stdout = writer.Prefixed("[init root storage] ", os.Stdout)
-			cmd.Stderr = writer.Prefixed("[init root storage] ", os.Stderr)
+			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
 
-			log.Println(cmd.String())
+			fmt.Fprintln(cmd.Stdout, cmd.String())
 
-			if err := cmd.Run(); err != nil {
+			if err = cmd.Run(); err != nil {
 				panic(err)
 			}
 		}
 	}
-	if err := run.Wait(); err != nil {
+	if err = run.Wait(); err != nil {
+		fmt.Fprintln(run.Stderr, err.Error())
 		panic(err)
 	}
 }

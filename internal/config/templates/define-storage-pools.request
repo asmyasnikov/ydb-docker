@@ -9,7 +9,7 @@ Command {
     NumGroups: 1
     PDiskFilter {
       Property {
-        Type: ROT
+        Type: SSD
       }
     }
   }
