@@ -113,7 +113,7 @@ func YdbDefaultLogLevel() int {
 		case "INFO":
 			return 6
 		default:
-			panic(fmt.Errorf("unknown log level '%s' defined in env '%s': %w", env, ydbDefaultLogLevel))
+			panic(fmt.Errorf("unknown log level '%s' defined in env '%s'", env, ydbDefaultLogLevel))
 		}
 	}
 	return ydbDefaultLogLevelDefault

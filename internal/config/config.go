@@ -172,7 +172,15 @@ func New(m Mode) (*Config, error) {
 		UseInMemoryPdisks: env.YdbUseInMemoryPdisks(),
 	}
 
+	hostName, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
 	templater := template.New("").Funcs(template.FuncMap{
+		"HOSTNAME": func() string {
+			return hostName
+		},
 		"YDB_PDISK_PATH": func() string {
 			return cfg.Pdisk.Path
 		},

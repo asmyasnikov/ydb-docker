@@ -20,16 +20,21 @@ func init() {
 	}
 }
 
+func defaultCmd(args ...string) (*config.Config, error) {
+	if err := deployCmd.Parse(args); err != nil {
+		return nil, err
+	}
+	return config.New(config.ModeDeploy)
+}
+
 func Parse() (*config.Config, error) {
 	if len(os.Args) == 1 {
-		deployCmd.Parse([]string{})
-		return config.New(config.ModeDeploy)
+		return defaultCmd()
 	}
 
 	switch os.Args[1] {
 	case "deploy":
-		deployCmd.Parse(os.Args[2:])
-		return config.New(config.ModeDeploy)
+		return defaultCmd()
 
 	default:
 		return nil, fmt.Errorf("unknown subcommand '%s', see help for more details", os.Args[1])

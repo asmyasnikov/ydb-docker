@@ -14,15 +14,6 @@ import (
 	"time"
 )
 
-func exists(files ...string) bool {
-	for _, f := range files {
-		if _, err := os.Stat(f); errors.Is(err, os.ErrNotExist) {
-			return false
-		}
-	}
-	return true
-}
-
 type Certs struct {
 	Path string
 	CA   string
@@ -39,15 +30,20 @@ func (certs *Certs) Persist() error {
 		}
 	}
 
+	hostName, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
 	// generate certificate
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(time.Now().Unix()),
-		Subject:      pkix.Name{Organization: []string{"localhost"}},
+		Subject:      pkix.Name{Organization: []string{"localhost", hostName}},
 		NotBefore:    time.Now().AddDate(-1, 0, 0),
 		NotAfter:     time.Now().AddDate(100, 0, 0),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		DNSNames:     []string{"localhost"},
+		DNSNames:     []string{"localhost", hostName},
 	}
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {

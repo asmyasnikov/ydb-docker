@@ -1,4 +1,4 @@
-package main
+package writer
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ type prefixedWriter struct {
 	lineIncomplete bool
 }
 
-func prefixed(prefix string, writer io.Writer) *prefixedWriter {
+func Prefixed(prefix string, writer io.Writer) *prefixedWriter {
 	return &prefixedWriter{
 		backend: writer,
 		prefix:  prefix,

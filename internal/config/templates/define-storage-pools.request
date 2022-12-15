@@ -2,14 +2,14 @@ Command {
   DefineStoragePool {
     BoxId: 1
     StoragePoolId: 1
-    Name: "/local:ssd_1"
+    Name: "/local:ssd"
     ErasureSpecies: "none"
     VDiskKind: "Default"
-    Kind: "/local:ssd_1"
+    Kind: "/local:ssd"
     NumGroups: 1
     PDiskFilter {
       Property {
-        Type: SSD
+        Type: ROT
       }
     }
   }

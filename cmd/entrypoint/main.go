@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/asmyasnikov/ydb-docker/internal/flags"
+	"github.com/asmyasnikov/ydb-docker/internal/writer"
 	"log"
 	"os"
 	"os/exec"
@@ -39,8 +40,8 @@ func main() {
 		"--yaml-config="+cfg.YdbConfig,
 		"--tenant-pool-file="+cfg.TenantPoolConfig,
 	)
-	run.Stdout = prefixed("[RUN] ", os.Stdout)
-	run.Stderr = prefixed("[RUN] ", os.Stderr)
+	run.Stdout = writer.Prefixed("[RUN] ", os.Stdout)
+	run.Stderr = writer.Prefixed("[RUN] ", os.Stderr)
 
 	log.Println(run.String())
 
@@ -79,7 +80,7 @@ func main() {
 	if needToPrepare {
 		// initialize storage
 		{
-			initStorageProcess := exec.CommandContext(ctx, cfg.BinaryPath,
+			cmd := exec.CommandContext(ctx, cfg.BinaryPath,
 				"-s",
 				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
 				"admin",
@@ -89,19 +90,40 @@ func main() {
 				"--yaml-file",
 				cfg.YdbConfig,
 			)
-			initStorageProcess.Stdout = prefixed("[INIT STORAGE] ", os.Stdout)
-			initStorageProcess.Stderr = prefixed("[INIT STORAGE] ", os.Stderr)
+			cmd.Stdout = writer.Prefixed("[INIT STORAGE] ", os.Stdout)
+			cmd.Stderr = writer.Prefixed("[INIT STORAGE] ", os.Stderr)
 
-			log.Println(initStorageProcess.String())
+			log.Println(cmd.String())
 
-			if err := initStorageProcess.Run(); err != nil {
+			if err := cmd.Run(); err != nil {
 				panic(err)
 			}
 		}
 
+		//// register database
+		//{
+		//	cmd := exec.CommandContext(ctx, cfg.BinaryPath,
+		//		"-s",
+		//		"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
+		//		"admin",
+		//		"database",
+		//		"/local",
+		//		"create",
+		//		"ssd:1",
+		//	)
+		//	cmd.Stdout = Prefixed("[REGISTER DATABASE] ", os.Stdout)
+		//	cmd.Stderr = Prefixed("[REGISTER DATABASE] ", os.Stderr)
+		//
+		//	log.Println(cmd.String())
+		//
+		//	if err := cmd.Run(); err != nil {
+		//		panic(err)
+		//	}
+		//}
+
 		// define storage pool
 		{
-			defineStoragePoolProcess := exec.CommandContext(ctx, cfg.BinaryPath,
+			cmd := exec.CommandContext(ctx, cfg.BinaryPath,
 				"-s",
 				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
 				"admin",
@@ -110,19 +132,19 @@ func main() {
 				"invoke",
 				"--proto-file="+cfg.DefineStoragePoolsRequest,
 			)
-			defineStoragePoolProcess.Stdout = prefixed("[DEFINE STORAGE POOL] ", os.Stdout)
-			defineStoragePoolProcess.Stderr = prefixed("[DEFINE STORAGE POOL] ", os.Stderr)
+			cmd.Stdout = writer.Prefixed("[DEFINE STORAGE POOL] ", os.Stdout)
+			cmd.Stderr = writer.Prefixed("[DEFINE STORAGE POOL] ", os.Stderr)
 
-			log.Println(defineStoragePoolProcess.String())
+			log.Println(cmd.String())
 
-			if err := defineStoragePoolProcess.Run(); err != nil {
+			if err := cmd.Run(); err != nil {
 				panic(err)
 			}
 		}
 
 		// init root storage
 		{
-			initRootStorageProcess := exec.CommandContext(ctx, cfg.BinaryPath,
+			cmd := exec.CommandContext(ctx, cfg.BinaryPath,
 				"-s",
 				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
 				"db",
@@ -130,12 +152,12 @@ func main() {
 				"execute",
 				cfg.BindStorageRequest,
 			)
-			initRootStorageProcess.Stdout = prefixed("[init root storage] ", os.Stdout)
-			initRootStorageProcess.Stderr = prefixed("[init root storage] ", os.Stderr)
+			cmd.Stdout = writer.Prefixed("[init root storage] ", os.Stdout)
+			cmd.Stderr = writer.Prefixed("[init root storage] ", os.Stderr)
 
-			log.Println(initRootStorageProcess.String())
+			log.Println(cmd.String())
 
-			if err := initRootStorageProcess.Run(); err != nil {
+			if err := cmd.Run(); err != nil {
 				panic(err)
 			}
 		}
