@@ -2,7 +2,7 @@ ARG ARCH=amd64
 
 ARG SLIM_BINARIES=false
 
-FROM ${ARCH}/debian:stable-slim AS builder
+FROM ${ARCH}/debian:stable AS builder
 
 RUN apt update && apt install -y ca-certificates upx
 
@@ -14,7 +14,7 @@ WORKDIR /build
 
 RUN chmod +x ./bin/ydbd
 
-RUN if [ "$SLIM_BINARIES" = "true" ] ; \
+RUN if [[ "$SLIM_BINARIES" = "true" ]] ; \
     then \
       upx ./bin/ydbd ; \
     fi
@@ -23,7 +23,7 @@ RUN mv ./bin/ydbd ./
 
 RUN chmod +x ./bin/ydb
 
-RUN if [ "$SLIM_BINARIES" = "true" ] ; \
+RUN if [[ "$SLIM_BINARIES" = "true" ]] ; \
     then \
       upx ./bin/ydb ; \
     fi
@@ -32,7 +32,7 @@ RUN mv ./bin/ydb ./
 
 RUN chmod +x ./entrypoint
 
-RUN if [ "$SLIM_BINARIES" = "true" ] ; \
+RUN if [[ "$SLIM_BINARIES" = "true" ]] ; \
     then \
     upx ./entrypoint ; \
     fi
