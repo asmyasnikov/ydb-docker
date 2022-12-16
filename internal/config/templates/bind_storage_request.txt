@@ -4,8 +4,8 @@ ModifyScheme {
   SubDomain {
     Name: "local"
     StoragePools {
-      Name: "/local:ssd"
-      Kind: "/local:ssd"
+      Name: "dynamic_storage_pool:1"
+      Kind: "hdd"
     }
   }
 }

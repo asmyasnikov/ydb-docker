@@ -84,36 +84,36 @@ channel_profile_config:
     - channel:
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
       profile_id: 0
     - channel:
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: ssd
+          storage_pool_kind: hdd
       profile_id: 1
 domains_config:
   domain:
@@ -121,11 +121,11 @@ domains_config:
       name: local
       scheme_root: 72075186232723360
       storage_pool_types:
-        - kind: ssd
+        - kind: hdd
           pool_config:
             box_id: 1
             erasure_species: none
-            kind: ssd
+            kind: hdd
             pdisk_filter:
               - property:
                   - type: ROT

@@ -21,13 +21,13 @@ Actions {
               ColumnCodec: ColumnCodecLZ4
               StorageConfig {
                 SysLog {
-                  PreferredPoolKind: "ssd"
+                  PreferredPoolKind: "hdd"
                 }
                 Log {
-                  PreferredPoolKind: "ssd"
+                  PreferredPoolKind: "hdd"
                 }
                 Data {
-                  PreferredPoolKind: "ssd"
+                  PreferredPoolKind: "hdd"
                 }
               }
             }
@@ -37,13 +37,13 @@ Actions {
             ColumnFamilies {
               StorageConfig {
                 SysLog {
-                  PreferredPoolKind: "ssd"
+                  PreferredPoolKind: "hdd"
                 }
                 Log {
-                  PreferredPoolKind: "ssd"
+                  PreferredPoolKind: "hdd"
                 }
                 Data {
-                  PreferredPoolKind: "ssd"
+                  PreferredPoolKind: "hdd"
                 }
               }
             }
