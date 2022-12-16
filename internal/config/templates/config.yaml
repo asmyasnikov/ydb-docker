@@ -142,6 +142,7 @@ grpc_config:
   cert: {{ YDB_CERTS_CERT_PEM }}
   key: {{ YDB_CERTS_KEY_PEM }}
   services:
+    - auth
     - experimental
     - legacy
     - yql
