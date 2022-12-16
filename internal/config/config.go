@@ -195,7 +195,7 @@ func New(m Mode) (*Config, error) {
 			return env.YdbStorePoolKind()
 		},
 		"STORAGE_POOL_NAME": func() string {
-			return env.YdbStorePoolKind()
+			return env.YdbStorePoolName()
 		},
 	})
 
