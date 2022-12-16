@@ -35,6 +35,12 @@ const (
 	ydbPdiskSizeGb                = "YDB_PDISK_SIZE"
 	ydbPdiskSizeGbDefault         = 80
 	ydbPdiskSizeGbInMemoryDefault = 64
+
+	storagePoolKind        = "STORAGE_POOL_KIND"
+	storagePoolKindDefault = "ssd"
+
+	storagePoolName        = "STORAGE_POOL_NAME"
+	storagePoolNameDefault = "dynamic_storage_pool"
 )
 
 func YdbGrpcTlsDataPath() string {
@@ -161,4 +167,18 @@ func YdbIcPort() int {
 		return v
 	}
 	return icPortDefault
+}
+
+func YdbStorePoolKind() string {
+	if env, has := os.LookupEnv(storagePoolKind); has {
+		return env
+	}
+	return storagePoolKindDefault
+}
+
+func YdbStorePoolName() string {
+	if env, has := os.LookupEnv(storagePoolName); has {
+		return env
+	}
+	return storagePoolNameDefault
 }

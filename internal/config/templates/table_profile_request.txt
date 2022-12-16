@@ -21,13 +21,13 @@ Actions {
               ColumnCodec: ColumnCodecLZ4
               StorageConfig {
                 SysLog {
-                  PreferredPoolKind: "hdd"
+                  PreferredPoolKind: "{{ STORAGE_POOL_KIND }}"
                 }
                 Log {
-                  PreferredPoolKind: "hdd"
+                  PreferredPoolKind: "{{ STORAGE_POOL_KIND }}"
                 }
                 Data {
-                  PreferredPoolKind: "hdd"
+                  PreferredPoolKind: "{{ STORAGE_POOL_KIND }}"
                 }
               }
             }
@@ -37,13 +37,13 @@ Actions {
             ColumnFamilies {
               StorageConfig {
                 SysLog {
-                  PreferredPoolKind: "hdd"
+                  PreferredPoolKind: "{{ STORAGE_POOL_KIND }}"
                 }
                 Log {
-                  PreferredPoolKind: "hdd"
+                  PreferredPoolKind: "{{ STORAGE_POOL_KIND }}"
                 }
                 Data {
-                  PreferredPoolKind: "hdd"
+                  PreferredPoolKind: "{{ STORAGE_POOL_KIND }}"
                 }
               }
             }

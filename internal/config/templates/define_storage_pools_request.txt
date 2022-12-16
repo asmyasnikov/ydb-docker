@@ -2,10 +2,10 @@ Command {
   DefineStoragePool {
     BoxId: 1
     StoragePoolId: 1
-    Name: "dynamic_storage_pool:1"
+    Name: "{{ STORAGE_POOL_NAME }}:1"
     ErasureSpecies: "none"
     VDiskKind: "Default"
-    Kind: "hdd"
+    Kind: "{{ STORAGE_POOL_KIND }}"
     NumGroups: 1
     PDiskFilter {
       Property {

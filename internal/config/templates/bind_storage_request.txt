@@ -4,8 +4,8 @@ ModifyScheme {
   SubDomain {
     Name: "local"
     StoragePools {
-      Name: "dynamic_storage_pool:1"
-      Kind: "hdd"
+      Name: "{{ STORAGE_POOL_NAME }}:1"
+      Kind: "{{ STORAGE_POOL_KIND }}"
     }
   }
 }

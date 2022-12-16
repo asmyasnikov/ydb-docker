@@ -191,6 +191,12 @@ func New(m Mode) (*Config, error) {
 		"YDB_CERTS_KEY_PEM": func() string {
 			return cfg.Certs.Key
 		},
+		"STORAGE_POOL_KIND": func() string {
+			return env.YdbStorePoolKind()
+		},
+		"STORAGE_POOL_NAME": func() string {
+			return env.YdbStorePoolKind()
+		},
 	})
 
 	processTemplate := func(t string) string {
