@@ -1,6 +1,6 @@
 ARG ARCH=amd64
 
-ARG SLIM_BINARIES=false
+ARG BINARIES_TYPE=slim
 
 FROM ${ARCH}/debian:stable AS builder
 
@@ -14,7 +14,7 @@ WORKDIR /build
 
 RUN chmod +x ./bin/ydbd
 
-RUN if [[ "$SLIM_BINARIES" = "true" ]] ; \
+RUN if [[ "$BINARIES_TYPE" = "slim" ]] ; \
     then \
       upx ./bin/ydbd ; \
     fi
@@ -23,7 +23,7 @@ RUN mv ./bin/ydbd ./
 
 RUN chmod +x ./bin/ydb
 
-RUN if [[ "$SLIM_BINARIES" = "true" ]] ; \
+RUN if [[ "$BINARIES_TYPE" = "slim" ]] ; \
     then \
       upx ./bin/ydb ; \
     fi
@@ -32,7 +32,7 @@ RUN mv ./bin/ydb ./
 
 RUN chmod +x ./entrypoint
 
-RUN if [[ "$SLIM_BINARIES" = "true" ]] ; \
+RUN if [[ "$BINARIES_TYPE" = "slim" ]] ; \
     then \
     upx ./entrypoint ; \
     fi
