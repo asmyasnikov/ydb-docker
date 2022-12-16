@@ -1,6 +1,6 @@
 ARG ARCH=amd64
 
-ARG BINARIES_TYPE=slim
+ARG BINARIES_TYPE=default
 
 FROM ${ARCH}/debian:stable AS builder
 
