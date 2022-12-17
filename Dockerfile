@@ -1,8 +1,8 @@
 ARG ARCH=amd64
 
-ARG BINARIES_TYPE=default
-
 FROM ${ARCH}/debian:stable AS builder
+
+ARG COMPRESS_BINARIES=false
 
 RUN apt update && apt install -y ca-certificates upx
 
@@ -14,28 +14,19 @@ WORKDIR /build
 
 RUN chmod +x ./bin/ydbd
 
-RUN if [[ "$BINARIES_TYPE" = "slim" ]] ; \
-    then \
-      upx ./bin/ydbd ; \
-    fi
+RUN $COMPRESS_BINARIES && upx ./bin/ydbd || :
 
 RUN mv ./bin/ydbd ./
 
 RUN chmod +x ./bin/ydb
 
-RUN if [[ "$BINARIES_TYPE" = "slim" ]] ; \
-    then \
-      upx ./bin/ydb ; \
-    fi
+RUN $COMPRESS_BINARIES && upx ./bin/ydb || :
 
 RUN mv ./bin/ydb ./
 
 RUN chmod +x ./entrypoint
 
-RUN if [[ "$BINARIES_TYPE" = "slim" ]] ; \
-    then \
-    upx ./entrypoint ; \
-    fi
+RUN $COMPRESS_BINARIES && upx ./entrypoint || :
 
 RUN mkdir -p ./root/ydb/bin/
 
