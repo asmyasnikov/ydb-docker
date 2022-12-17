@@ -129,29 +129,6 @@ func main() {
 				panic(err)
 			}
 		}
-
-		// apply table profile config
-		{
-			cmd := exec.CommandContext(ctx, cfg.BinaryPath,
-				"-s",
-				"grpc://localhost:"+strconv.Itoa(cfg.Ports.Grpc),
-				"admin",
-				"console",
-				"configs",
-				"update",
-				cfg.TableProfilesConfig,
-			)
-
-			_, _ = recipe.WriteString(cmd.String() + "\n")
-
-			cmd.Stdout, run.Stderr = log.Colored(log.NextColour())
-
-			fmt.Fprintln(cmd.Stdout, cmd.String())
-
-			if err = cmd.Run(); err != nil {
-				panic(err)
-			}
-		}
 	}
 	if err = run.Wait(); err != nil {
 		panic(err)

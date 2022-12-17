@@ -23,9 +23,6 @@ var (
 
 	//go:embed templates/define_storage_pools_request.txt
 	defineStoragePools string
-
-	//go:embed templates/table_profile_request.txt
-	tableProfilesConfig string
 )
 
 type Mode int
@@ -42,7 +39,6 @@ type Config struct {
 	YdbConfig                 string
 	BindStorageRequest        string
 	DefineStoragePoolsRequest string
-	TableProfilesConfig       string
 	UseInMemoryPdisks         bool
 	Ports                     struct {
 		Grpc  int
@@ -114,10 +110,6 @@ func (cfg *Config) Persist(filePath string) (hasChanges bool, _ error) {
 	}
 
 	if err := swapContentToFileIfNotExists(path.Join(cfg.WorkingDir, "bind_storage_request.txt"), &cfg.BindStorageRequest); err != nil {
-		return false, err
-	}
-
-	if err := swapContentToFileIfNotExists(path.Join(cfg.WorkingDir, "table_profile_config.txt"), &cfg.TableProfilesConfig); err != nil {
 		return false, err
 	}
 
@@ -209,7 +201,6 @@ func New(m Mode) (*Config, error) {
 
 	cfg.BindStorageRequest = processTemplate(bindLocalStorageRequest)
 	cfg.DefineStoragePoolsRequest = processTemplate(defineStoragePools)
-	cfg.TableProfilesConfig = processTemplate(tableProfilesConfig)
 	cfg.YdbConfig = processTemplate(config)
 
 	return cfg, nil
