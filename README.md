@@ -11,8 +11,7 @@
     docker build -t amyasnikov/ydb:slim --build-arg COMPRESS_BINARIES=true .
     ```
 
-## Environment variables for entrypoint tool
-
+## Environment variables for run docker container
 
 | Name                       | Type      | Default                | Description                  |
 |----------------------------|-----------|------------------------|------------------------------|

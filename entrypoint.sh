@@ -1,14 +1,29 @@
+#!/bin/sh
+
+set -e
+
+if [ ${YDB_USE_IN_MEMORY_PDISKS} ]; then
+  YDB_PDISK_PATH="SectorMap:1:64"
+else
+  YDB_PDISK_PATH="${YDB_DATA_PATH}/ydb.data"
+  fallocate -l ${YDB_PDISK_SIZE}G ${YDB_PDISK_PATH}
+fi
+
+CPU_CORES=$(grep ^cpu\\scores /proc/cpuinfo | wc -l)
+
+mkdir -p ${YDB_DATA_PATH}/
+cat << EOF > ${YDB_DATA_PATH}/config.yaml
 static_erasure: none
 host_configs:
   - drive:
-      - path: {{ YDB_PDISK_PATH }}
+      - path: ${YDB_PDISK_PATH}
         type: ROT
     host_config_id: 1
 hosts:
-  - host: {{ HOSTNAME }}
+  - host: ${HOSTNAME}
     node_id: 1
     host_config_id: 1
-    port: {{ IC_PORT }}
+    port: ${IC_PORT}
     walle_location:
       body: 1
       data_center: '1'
@@ -18,23 +33,23 @@ actor_system_config:
   executor:
     - name: System
       spin_threshold: 0
-      threads: 2
+      threads: ${CPU_CORES}
       type: BASIC
     - name: User
       spin_threshold: 0
-      threads: 3
+      threads: ${CPU_CORES}
       type: BASIC
     - name: Batch
       spin_threshold: 0
-      threads: 2
+      threads: ${CPU_CORES}
       type: BASIC
     - name: IO
-      threads: 1
+      threads: ${CPU_CORES}
       time_per_mailbox_micro_secs: 100
       type: IO
     - name: IC
       spin_threshold: 10
-      threads: 1
+      threads: ${CPU_CORES}
       time_per_mailbox_micro_secs: 100
       type: BASIC
   io_executor: 3
@@ -63,7 +78,7 @@ blob_storage_config:
                     vdisk_slot_id: 0
     pdisks:
       - node_id: 1
-        path: {{ YDB_PDISK_PATH }}
+        path: ${YDB_PDISK_PATH}
         pdisk_category: 0
         pdisk_guid: 1
         pdisk_id: 1
@@ -84,36 +99,36 @@ channel_profile_config:
     - channel:
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
       profile_id: 0
     - channel:
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
           pdisk_category: 0
-          storage_pool_kind: {{ STORAGE_POOL_KIND }}
+          storage_pool_kind: ${STORAGE_POOL_KIND}
       profile_id: 1
 domains_config:
   domain:
@@ -121,11 +136,11 @@ domains_config:
       name: local
       scheme_root: 72075186232723360
       storage_pool_types:
-        - kind: {{ STORAGE_POOL_KIND }}
+        - kind: ${STORAGE_POOL_KIND}
           pool_config:
             box_id: 1
             erasure_species: none
-            kind: {{ STORAGE_POOL_KIND }}
+            kind: ${STORAGE_POOL_KIND}
             pdisk_filter:
               - property:
                   - type: ROT
@@ -138,9 +153,9 @@ domains_config:
       ssid: 1
 grpc_config:
   host: '[::]'
-  ca: {{ YDB_CERTS_CA_PEM }}
-  cert: {{ YDB_CERTS_CERT_PEM }}
-  key: {{ YDB_CERTS_KEY_PEM }}
+  ca: ${YDB_GRPC_TLS_DATA_PATH}/ca.pem
+  cert: ${YDB_GRPC_TLS_DATA_PATH}/cert.pem
+  key: ${YDB_GRPC_TLS_DATA_PATH}/key.pem
   services:
     - auth
     - experimental
@@ -162,7 +177,6 @@ grpc_config:
     - export
     - import
     - yq
-    - keyvalue
 interconnect_config:
   start_tcp: true
 kqpconfig:
@@ -176,15 +190,15 @@ kqpconfig:
     - name: _KqpForceNewEngine
       value: 'true'
 log_config:
-  default_level: {{ YDB_DEFAULT_LOG_LEVEL }}
+  default_level: ${YDB_DEFAULT_LOG_LEVEL}
   entry: []
   sys_log: false
 nameservice_config:
   node:
     - address: ::1
-      host: {{ HOSTNAME }}
+      host: ${HOSTNAME}
       node_id: 1
-      port: {{ IC_PORT }}
+      port: ${IC_PORT}
       walle_location:
         body: 1
         data_center: '1'
@@ -288,3 +302,48 @@ yandex_query_config:
     enabled: true
   token_accessor:
     enabled: true
+EOF
+
+cat << EOF > ${YDB_DATA_PATH}/bind_storage_request.txt
+ModifyScheme {
+  WorkingDir: "/"
+  OperationType: ESchemeOpAlterSubDomain
+  SubDomain {
+    Name: "local"
+    StoragePools {
+      Name: "${STORAGE_POOL_NAME}"
+      Kind: "${STORAGE_POOL_KIND}"
+    }
+  }
+}
+EOF
+
+cat << EOF > ${YDB_DATA_PATH}/define_storage_pools_request.txt
+Command {
+  DefineStoragePool {
+    BoxId: 1
+    StoragePoolId: 1
+    Name: "${STORAGE_POOL_NAME}"
+    ErasureSpecies: "none"
+    VDiskKind: "Default"
+    Kind: "${STORAGE_POOL_KIND}"
+    NumGroups: 1
+    PDiskFilter {
+      Property {
+        Type: ROT
+      }
+      Property {
+        Kind: 0
+      }
+    }
+  }
+}
+EOF
+
+/bin/ydb_certs ${YDB_GRPC_TLS_DATA_PATH}/
+/ydbd server --node=1 --ca=${YDB_GRPC_TLS_DATA_PATH}/ca.pem --grpc-port=${GRPC_PORT} --grpcs-port=${GRPC_TLS_PORT} --mon-port=${MON_PORT} --ic-port=${IC_PORT} --yaml-config=${YDB_DATA_PATH}/config.yaml & PID=$!
+sleep 1 # TODO: fix it with polling init command
+/ydbd -s grpc://localhost:${GRPC_PORT} admin blobstorage config init --yaml-file ${YDB_DATA_PATH}/config.yaml
+/ydbd -s grpc://localhost:${GRPC_PORT} admin blobstorage config invoke --proto-file=${YDB_DATA_PATH}/define_storage_pools_request.txt
+/ydbd -s grpc://localhost:${GRPC_PORT} db schema execute ${YDB_DATA_PATH}/bind_storage_request.txt
+wait $PID

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"errors"
-	"github.com/asmyasnikov/ydb-docker/internal/env"
 	"math/big"
 	"os"
+	"path"
 	"time"
 )
 
@@ -22,12 +22,12 @@ type Certs struct {
 }
 
 func (certs *Certs) Persist() error {
-	// check certificates path exists and create it if necessary
-	if _, err := os.Stat(certs.Path); errors.Is(err, os.ErrNotExist) {
-		err = os.MkdirAll(certs.Path, 0777)
-		if err != nil {
-			panic(err)
-		}
+	if err := os.RemoveAll(certs.Path); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(certs.Path, 0777); err != nil {
+		panic(err)
 	}
 
 	hostName, err := os.Hostname()
@@ -37,6 +37,7 @@ func (certs *Certs) Persist() error {
 
 	// generate certificate
 	template := x509.Certificate{
+		Version:      tls.VersionTLS12,
 		SerialNumber: big.NewInt(time.Now().Unix()),
 		Subject:      pkix.Name{Organization: []string{"localhost", hostName}},
 		NotBefore:    time.Now().AddDate(-1, 0, 0),
@@ -77,11 +78,23 @@ func (certs *Certs) Persist() error {
 	return nil
 }
 
-func New() *Certs {
+func caPem(ydbGrpcTlsDataPath string) string {
+	return path.Join(ydbGrpcTlsDataPath, "ca.pem")
+}
+
+func certPem(ydbGrpcTlsDataPath string) string {
+	return path.Join(ydbGrpcTlsDataPath, "cert.pem")
+}
+
+func keyPem(ydbGrpcTlsDataPath string) string {
+	return path.Join(ydbGrpcTlsDataPath, "key.pem")
+}
+
+func New(ydbGrpcTlsDataPath string) *Certs {
 	return &Certs{
-		Path: env.YdbGrpcTlsDataPath(),
-		CA:   env.YdbGrpcTlsDataPathCaPem(),
-		Cert: env.YdbGrpcTlsDataPathCertPem(),
-		Key:  env.YdbGrpcTlsDataPathKeyPem(),
+		Path: ydbGrpcTlsDataPath,
+		CA:   caPem(ydbGrpcTlsDataPath),
+		Cert: certPem(ydbGrpcTlsDataPath),
+		Key:  keyPem(ydbGrpcTlsDataPath),
 	}
 }

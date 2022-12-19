@@ -17,6 +17,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          project_path: "./cmd/entrypoint"
-          binary_name: "entrypoint"
+          project_path: "./cmd/ydb_certs"
+          binary_name: "ydb_certs"
           extra_files: LICENSE README.md

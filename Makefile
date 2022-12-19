@@ -1,7 +1,8 @@
-YDB_VERSION = 22.4.44
-CLI_VERSION = 2.1.0
-IMAGE=ydb-platform/yandex-docker-local-ydb
+YDB_VERSION=22.4.44
+CLI_VERSION=2.1.0
+IMAGE=amyasnikov/ydb
 TAG=$(YDB_VERSION)
+COMPRESS_BINARIES=false
 
 artifacts:
 	rm -rf artifacts && mkdir -p artifacts/{bin,lib};
