@@ -1,4 +1,9 @@
-# `ydb-docker` - tool and project for build and run YDB in docker container in single-node configuration
+# `ydb-docker` - project for build YDB docker container in single-node configuration
+
+## Build ydb_certs tool
+```shell
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./artifacts/bin/ydb_certs ./cmd/ydb_certs
+```
 
 ## Build docker image
 
