@@ -22,10 +22,6 @@ type Certs struct {
 }
 
 func (certs *Certs) Persist() error {
-	if err := os.RemoveAll(certs.Path); err != nil {
-		return err
-	}
-
 	if err := os.MkdirAll(certs.Path, 0777); err != nil {
 		panic(err)
 	}
