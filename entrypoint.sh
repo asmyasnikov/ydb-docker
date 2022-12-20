@@ -151,6 +151,13 @@ domains_config:
           - 1
         nto_select: 1
       ssid: 1
+feature_flags:
+  enable_mvcc: VALUE_TRUE
+  enable_persistent_query_stats: true
+  enable_public_api_external_blobs: false
+  enable_scheme_transactions_at_scheme_shard: true
+  enable_predicate_extract_for_scan_queries: true
+  enable_predicate_extract_for_data_queries: true
 grpc_config:
   host: '[::]'
   ca: ${YDB_GRPC_TLS_DATA_PATH}/ca.pem
