@@ -165,7 +165,6 @@ grpc_config:
   key: ${YDB_GRPC_TLS_DATA_PATH}/key.pem
   services:
     - auth
-    - experimental
     - legacy
     - yql
     - discovery
@@ -177,7 +176,6 @@ grpc_config:
     - pqv1
     - datastreams
     - scripting
-    - s3_internal
     - clickhouse_internal
     - rate_limiter
     - analytics
