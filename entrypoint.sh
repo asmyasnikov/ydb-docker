@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -ex
 
 if [ ${YDB_USE_IN_MEMORY_PDISKS} ]; then
   YDB_PDISK_PATH="SectorMap:1:64"
@@ -11,13 +11,15 @@ fi
 
 CPU_CORES=$(grep ^cpu\\scores /proc/cpuinfo | wc -l)
 
+FEATURE_FLAGS=$(echo "${FEATURE_FLAGS}" | sed -e 's/\;/\n  /g; s/^/\n  /g')
+
 mkdir -p ${YDB_DATA_PATH}/
 cat << EOF > ${YDB_DATA_PATH}/config.yaml
 static_erasure: none
 host_configs:
   - drive:
       - path: ${YDB_PDISK_PATH}
-        type: ROT
+        type: SSD
     host_config_id: 1
 hosts:
   - host: ${HOSTNAME}
@@ -79,7 +81,7 @@ blob_storage_config:
     pdisks:
       - node_id: 1
         path: ${YDB_PDISK_PATH}
-        pdisk_category: 0
+        pdisk_category: 1
         pdisk_guid: 1
         pdisk_id: 1
     vdisks:
@@ -98,36 +100,36 @@ channel_profile_config:
   profile:
     - channel:
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
       profile_id: 0
     - channel:
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
         - erasure_species: none
-          pdisk_category: 0
+          pdisk_category: 1
           storage_pool_kind: ${STORAGE_POOL_KIND}
       profile_id: 1
 domains_config:
@@ -143,7 +145,7 @@ domains_config:
             kind: ${STORAGE_POOL_KIND}
             pdisk_filter:
               - property:
-                  - type: ROT
+                  - type: SSD
             vdisk_kind: Default
   state_storage:
     - ring:
@@ -157,7 +159,7 @@ feature_flags:
   enable_public_api_external_blobs: false
   enable_scheme_transactions_at_scheme_shard: true
   enable_predicate_extract_for_scan_queries: true
-  enable_predicate_extract_for_data_queries: true
+  enable_predicate_extract_for_data_queries: true${FEATURE_FLAGS}
 grpc_config:
   host: '[::]'
   ca: ${YDB_GRPC_TLS_DATA_PATH}/ca.pem
@@ -335,7 +337,7 @@ Command {
     NumGroups: 1
     PDiskFilter {
       Property {
-        Type: ROT
+        Type: SSD
       }
       Property {
         Kind: 0
