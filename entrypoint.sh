@@ -167,6 +167,7 @@ grpc_config:
   key: ${YDB_GRPC_TLS_DATA_PATH}/key.pem
   services:
     - auth
+    - monitoring
     - legacy
     - yql
     - discovery
